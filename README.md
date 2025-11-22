@@ -40,7 +40,7 @@ A modern fitness tracking application built with React Native and Expo, designed
 - **Video Player**: react-native-youtube-iframe
 
 ### Backend
-- **Backend Repository**: [KraftLogApi](https://github.com/your-repo/KraftLogApi)
+- **Backend Repository**: [KraftLogApi](https://github.com/clertonraf/KraftLogApi)
 - **API**: Spring Boot REST API
 - **Database**: PostgreSQL (Docker)
 - **Authentication**: JWT tokens
