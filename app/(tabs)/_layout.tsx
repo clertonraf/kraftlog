@@ -24,6 +24,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="routines"
+        options={{
+          title: 'Routines',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="explore"
         options={{
           title: 'Exercises',

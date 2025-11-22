@@ -1,22 +1,50 @@
 # KraftLog 💪
 
-A modern fitness tracking application built with React Native and Expo, designed to help users log their workouts, track exercises, and monitor their fitness progress.
+A comprehensive fitness tracking application built with React Native and Expo, designed to help users create workout routines, log their training sessions, and track their fitness progress over time.
 
 ## Features
 
 ### 🔐 Authentication
 - User registration and login
 - JWT-based authentication
-- Secure token storage with AsyncStorage
+- Secure token storage
 - Admin and regular user roles
+- Role-based permissions
 
 ### 🏋️ Exercise Management
-- Browse comprehensive exercise library
+- Comprehensive exercise library with 250+ exercises
 - Search exercises by name
 - Filter by muscle groups (Chest, Back, Shoulders, Arms, Legs, Core, etc.)
 - View exercise demonstrations via embedded YouTube videos
+- Exercise details including sets, reps, and technique recommendations
+- **Admin only**: Create new exercises
 - **Admin only**: Import exercises from PDF files
 - **Admin only**: Edit and delete exercises
+
+### 📅 Routine Management
+- Create custom workout routines
+- Define routine duration (start/end dates)
+- Add multiple workouts to each routine
+- Set active routine for current training cycle
+- View history of past routines
+- Edit and delete routines
+
+### 💪 Workout Planning
+- Create workouts within routines
+- Add exercises to workouts
+- Define recommended weight, sets, and reps for each exercise
+- Specify training techniques (SST, Gironda, GVT, etc.)
+- Set rest intervals between exercises
+- Organize workouts by day/order
+
+### 📊 Workout Logging
+- Log daily workout sessions
+- Track actual weight and reps performed
+- Record individual sets with rest times
+- Add notes for each exercise
+- Mark exercises and workouts as complete
+- Track workout duration
+- View workout history
 
 ### 📱 Cross-Platform Support
 - iOS native app
@@ -40,10 +68,16 @@ A modern fitness tracking application built with React Native and Expo, designed
 - **Video Player**: react-native-youtube-iframe
 
 ### Backend
-- **Backend Repository**: [KraftLogApi](https://github.com/clertonraf/KraftLogApi)
-- **API**: Spring Boot REST API
+- **Backend Repository**: [KraftLogApi](~/workspace/KraftLogApi)
+- **Framework**: Spring Boot 3.x
 - **Database**: PostgreSQL (Docker)
-- **Authentication**: JWT tokens
+- **Authentication**: JWT tokens with Spring Security
+- **Features**:
+  - User management
+  - Exercise library with muscle group mapping
+  - Routine and workout management
+  - Workout logging and progress tracking
+  - PDF import for bulk exercise creation
 
 ## Prerequisites
 
@@ -77,10 +111,24 @@ A modern fitness tracking application built with React Native and Expo, designed
 
 4. **Start the backend**
 
-   Follow instructions in the [KraftLogApi](https://github.com/your-repo/KraftLogApi) repository to:
-   - Start PostgreSQL with Docker
-   - Run the Spring Boot application
-   - Ensure it's running on `http://localhost:8080`
+   Follow these steps:
+   
+   a. Navigate to the backend directory:
+   ```bash
+   cd ~/workspace/KraftLogApi
+   ```
+   
+   b. Start PostgreSQL with Docker:
+   ```bash
+   docker-compose up -d
+   ```
+   
+   c. Run the Spring Boot application:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+   
+   d. Verify it's running on `http://localhost:8080`
 
 ## Running the App
 
@@ -116,6 +164,7 @@ kraftlog/
 │   ├── (tabs)/            # Tab navigation screens
 │   │   ├── explore.tsx    # Exercise library
 │   │   ├── index.tsx      # Home/Dashboard
+│   │   ├── routines.tsx   # Routine management (coming soon)
 │   │   └── _layout.tsx    # Tab layout
 │   ├── login.tsx          # Login screen
 │   ├── register.tsx       # Registration screen
@@ -127,7 +176,9 @@ kraftlog/
 ├── services/              # API services
 │   ├── api.ts            # Axios configuration
 │   ├── authService.ts    # Authentication API
-│   └── exerciseService.ts # Exercise management API
+│   ├── exerciseService.ts # Exercise management API
+│   ├── routineService.ts  # Routine & workout API
+│   └── logService.ts      # Workout logging API
 ├── constants/             # App constants and theme
 ├── assets/               # Images, fonts, icons
 └── package.json          # Dependencies
@@ -157,29 +208,60 @@ The backend comes with default users:
 ## Key Features Guide
 
 ### For Regular Users
-1. **Browse Exercises**: View all exercises with videos
-2. **Search**: Find exercises by name
-3. **Filter**: Sort by muscle groups
-4. **Watch Videos**: Click video icon to view demonstrations
+1. **Browse Exercises**: View all exercises with videos and details
+2. **Search & Filter**: Find exercises by name or muscle group
+3. **Watch Videos**: Click exercises to view YouTube demonstrations
+4. **Create Routines**: Plan your workout routines
+5. **Build Workouts**: Add exercises to workouts with target sets/reps
+6. **Log Sessions**: Track your actual performance in the gym
+7. **View History**: Review past workouts and progress
 
 ### For Admin Users
 All regular user features plus:
-1. **Import Exercises**: Upload PDF files with exercise lists
-2. **Edit Exercises**: Click any exercise card to edit details
-3. **Delete Exercises**: Remove exercises from the library
-4. **Manage Videos**: Add/update YouTube video links
+1. **Create Exercises**: Add new exercises to the library
+2. **Import Exercises**: Upload PDF files with exercise lists
+3. **Edit Exercises**: Modify exercise details, videos, and muscles
+4. **Delete Exercises**: Remove exercises from the library
+5. **Manage Videos**: Add/update YouTube video links
 
 ## API Endpoints
 
 The app connects to these backend endpoints:
 
+### Authentication
 - `POST /auth/login` - User authentication
 - `POST /auth/register` - User registration
+
+### Exercises & Muscles
 - `GET /exercises` - Fetch all exercises
+- `GET /exercises/:id` - Get exercise by ID
 - `GET /muscles` - Fetch muscle groups
-- `POST /admin/exercises/import-pdf` - Import exercises (admin)
-- `PUT /admin/exercises/:id` - Update exercise (admin)
-- `DELETE /admin/exercises/:id` - Delete exercise (admin)
+- `POST /admin/exercises` - Create new exercise (admin)
+- `POST /admin/exercises/import-pdf` - Import exercises from PDF (admin)
+- `PUT /exercises/:id` - Update exercise
+- `DELETE /exercises/:id` - Delete exercise
+
+### Routines & Workouts
+- `GET /routines` - Get all routines
+- `GET /routines/:id` - Get routine by ID
+- `GET /routines/user/:userId` - Get user's routines
+- `POST /routines` - Create new routine
+- `PUT /routines/:id` - Update routine
+- `DELETE /routines/:id` - Delete routine
+- `POST /workouts` - Create workout
+- `PUT /workouts/:id` - Update workout
+- `DELETE /workouts/:id` - Delete workout
+
+### Workout Logging
+- `POST /log-routines` - Start routine session
+- `GET /log-routines/:id` - Get logged routine
+- `PUT /log-routines/:id` - Update logged routine
+- `POST /log-workouts` - Start workout session
+- `PUT /log-workouts/:id` - Complete workout
+- `POST /log-exercises` - Log exercise
+- `PUT /log-exercises/:id` - Update logged exercise
+- `POST /log-sets` - Log individual set
+- `PUT /log-sets/:id` - Update logged set
 
 ## Troubleshooting
 

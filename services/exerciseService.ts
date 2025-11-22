@@ -78,6 +78,11 @@ export const exerciseService = {
     return response.data;
   },
 
+  async createExercise(data: ExerciseUpdateRequest): Promise<ExerciseResponse> {
+    const response = await api.post<ExerciseResponse>('/admin/exercises', data);
+    return response.data;
+  },
+
   async deleteExercise(id: string): Promise<void> {
     await api.delete(`/exercises/${id}`);
   },

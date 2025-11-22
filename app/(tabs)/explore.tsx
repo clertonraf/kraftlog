@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { exerciseService, ExerciseResponse, MuscleResponse, MuscleGroup } from '@/services/exerciseService';
 import EditExerciseModal from '@/components/EditExerciseModal';
@@ -27,12 +28,16 @@ export default function ExercisesScreen() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [editingExercise, setEditingExercise] = useState<ExerciseResponse | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const insets = useSafeAreaInsets();
   const { isAdmin } = useAuth();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Reload data whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   useEffect(() => {
     console.log('Filtering exercises...');
@@ -194,7 +199,21 @@ export default function ExercisesScreen() {
     console.log('Exercise pressed:', exercise.name);
     if (isAdmin) {
       setEditingExercise(exercise);
+      setIsCreating(false);
     }
+  };
+
+  const handleCreateExercise = () => {
+    // Create an empty exercise object for new exercise
+    const newExercise: ExerciseResponse = {
+      id: '',
+      name: '',
+      description: '',
+      videoUrl: '',
+      muscles: [],
+    };
+    setEditingExercise(newExercise);
+    setIsCreating(true);
   };
 
   const handleEditExercise = (exercise: ExerciseResponse) => {
@@ -429,13 +448,26 @@ export default function ExercisesScreen() {
         }
       />
 
+      {isAdmin && (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: insets.bottom + 20 }]}
+          onPress={handleCreateExercise}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
+
       {editingExercise && (
         <EditExerciseModal
           visible={true}
           exercise={editingExercise}
           muscles={muscles}
-          onClose={() => setEditingExercise(null)}
+          onClose={() => {
+            setEditingExercise(null);
+            setIsCreating(false);
+          }}
           onSave={loadData}
+          isCreating={isCreating}
         />
       )}
     </View>
@@ -605,5 +637,26 @@ const styles = StyleSheet.create({
     color: '#bbb',
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabText: {
+    fontSize: 32,
+    color: '#fff',
+    fontWeight: '300',
+    lineHeight: 32,
   },
 });

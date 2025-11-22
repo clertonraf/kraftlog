@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isAuth) {
         const currentUser = await authService.getCurrentUser();
         console.log('Current user from storage:', currentUser);
-        console.log('isAdmin value:', currentUser?.isAdmin);
+        console.log('isAdmin value:', currentUser?.admin);
         setUser(currentUser);
       }
     } catch (error) {
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         isAuthenticated: !!user,
-        isAdmin: user?.admin || false,
+        isAdmin: user?.isAdmin || user?.admin || false,
       }}
     >
       {children}

@@ -20,9 +20,10 @@ interface EditExerciseModalProps {
   muscles: MuscleResponse[];
   onClose: () => void;
   onSave: () => void;
+  isCreating?: boolean;
 }
 
-export default function EditExerciseModal({ visible, exercise, muscles, onClose, onSave }: EditExerciseModalProps) {
+export default function EditExerciseModal({ visible, exercise, muscles, onClose, onSave, isCreating = false }: EditExerciseModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [sets, setSets] = useState('');
@@ -55,7 +56,11 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Exercise name is required');
+      if (Platform.OS === 'web') {
+        alert('Exercise name is required');
+      } else {
+        Alert.alert('Error', 'Exercise name is required');
+      }
       return;
     }
 
@@ -72,13 +77,31 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
         muscleIds: selectedMuscleIds.length > 0 ? selectedMuscleIds : undefined,
       };
 
-      await exerciseService.updateExercise(exercise.id, updateData);
-      Alert.alert('Success', 'Exercise updated successfully');
+      if (isCreating) {
+        await exerciseService.createExercise(updateData);
+        if (Platform.OS === 'web') {
+          alert('Exercise created successfully');
+        } else {
+          Alert.alert('Success', 'Exercise created successfully');
+        }
+      } else {
+        await exerciseService.updateExercise(exercise.id, updateData);
+        if (Platform.OS === 'web') {
+          alert('Exercise updated successfully');
+        } else {
+          Alert.alert('Success', 'Exercise updated successfully');
+        }
+      }
+      
       onSave();
       onClose();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to update exercise';
-      Alert.alert('Error', errorMsg);
+      const errorMsg = error.response?.data?.message || error.message || `Failed to ${isCreating ? 'create' : 'update'} exercise`;
+      if (Platform.OS === 'web') {
+        alert(`Error: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
     } finally {
       setSaving(false);
     }
@@ -104,7 +127,7 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.cancelButton}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Edit Exercise</Text>
+          <Text style={styles.title}>{isCreating ? 'Create Exercise' : 'Edit Exercise'}</Text>
           <TouchableOpacity onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator color="#007AFF" />

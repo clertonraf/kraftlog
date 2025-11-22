@@ -17,14 +17,17 @@ export interface RegisterRequest {
 }
 
 export interface UserResponse {
-  id: number;
+  id: string;
   name: string;
   surname: string;
   email: string;
   birthDate?: string;
   weightKg?: number;
   heightCm?: number;
-  admin: boolean;
+  admin?: boolean;
+  isAdmin?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginResponse {
@@ -61,5 +64,16 @@ export const authService = {
   async isAuthenticated(): Promise<boolean> {
     const token = await AsyncStorage.getItem('token');
     return !!token;
+  },
+
+  async validateSession(): Promise<boolean> {
+    try {
+      const response = await api.get('/auth/validate');
+      return response.status === 200;
+    } catch (error) {
+      // If validation fails, clear the stored data
+      await this.logout();
+      return false;
+    }
   },
 };

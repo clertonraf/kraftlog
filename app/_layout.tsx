@@ -17,10 +17,11 @@ function RootLayoutNav() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
+    const inAuthenticatedRoute = inAuthGroup || segments[0] === 'routine' || segments[0] === 'workout';
 
-    if (!isAuthenticated && inAuthGroup) {
+    if (!isAuthenticated && inAuthenticatedRoute) {
       router.replace('/login');
-    } else if (isAuthenticated && !inAuthGroup && segments[0] !== 'register') {
+    } else if (isAuthenticated && !inAuthenticatedRoute && segments[0] !== 'register' && segments[0] !== 'modal') {
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, segments, loading]);
@@ -32,6 +33,8 @@ function RootLayoutNav() {
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="routine" />
+        <Stack.Screen name="workout" />
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
