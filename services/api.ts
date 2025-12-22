@@ -1,7 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -32,6 +33,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Suppress logging for expected 404s on last workout endpoint
+    if (error.response?.status === 404 && error.config?.url?.includes('/last')) {
+      return Promise.reject(error);
+    }
     console.error('API Error:', error.response?.status, error.config?.url);
     console.error('Error data:', error.response?.data);
     return Promise.reject(error);

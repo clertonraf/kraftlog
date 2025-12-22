@@ -17,7 +17,7 @@ function RootLayoutNav() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
-    const inAuthenticatedRoute = inAuthGroup || segments[0] === 'routine' || segments[0] === 'workout';
+    const inAuthenticatedRoute = inAuthGroup || segments[0] === 'routine' || segments[0] === 'workout' || segments[0] === 'history';
 
     if (!isAuthenticated && inAuthenticatedRoute) {
       router.replace('/login');
@@ -28,15 +28,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="routine" />
-        <Stack.Screen name="workout" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Modal' }} />
-      </Stack>
+      <Stack screenOptions={{ headerShown: false }} />
       <StatusBar style="auto" />
     </ThemeProvider>
   );

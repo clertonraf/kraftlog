@@ -3,15 +3,21 @@ import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, RoutineResponse, workoutService, WorkoutResponse } from '@/services/routineService';
+import { logRoutineService, LogRoutineResponse } from '@/services/logService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback } from 'react';
+import { Calendar } from 'react-native-calendars';
+
+type TabType = 'workouts' | 'calendar';
 
 export default function RoutineDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [routine, setRoutine] = useState<RoutineResponse | null>(null);
   const [workouts, setWorkouts] = useState<WorkoutResponse[]>([]);
+  const [logRoutines, setLogRoutines] = useState<LogRoutineResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('workouts');
 
   useFocusEffect(
     useCallback(() => {
@@ -24,12 +30,14 @@ export default function RoutineDetailsScreen() {
     
     setLoading(true);
     try {
-      const [routineData, workoutsData] = await Promise.all([
+      const [routineData, workoutsData, logRoutinesData] = await Promise.all([
         routineService.getRoutineById(id),
         workoutService.getWorkoutsByRoutineId(id),
+        logRoutineService.getLogRoutinesByRoutineId(id),
       ]);
       setRoutine(routineData);
       setWorkouts(workoutsData);
+      setLogRoutines(logRoutinesData);
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || error.message || 'Failed to load routine';
       if (Platform.OS === 'web') {
@@ -72,6 +80,52 @@ export default function RoutineDetailsScreen() {
         ]
       );
     }
+  };
+
+  const getMarkedDates = () => {
+    const marked: any = {};
+    
+    logRoutines.forEach((log) => {
+      if (log.endDatetime) {
+        const date = new Date(log.startDatetime).toISOString().split('T')[0];
+        marked[date] = {
+          marked: true,
+          dotColor: '#34C759',
+          selected: true,
+          selectedColor: '#E8F5E9',
+        };
+      }
+    });
+    
+    return marked;
+  };
+
+  const getWorkoutSessionsForDate = (dateString: string) => {
+    return logRoutines.filter((log) => {
+      const logDate = new Date(log.startDatetime).toISOString().split('T')[0];
+      return logDate === dateString && log.endDatetime;
+    });
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const calculateDuration = (start: string, end?: string) => {
+    if (!end) return '0m';
+    const durationMs = new Date(end).getTime() - new Date(start).getTime();
+    const minutes = Math.floor(durationMs / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${remainingMinutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   const renderWorkout = ({ item, index }: { item: WorkoutResponse; index: number }) => (
@@ -142,6 +196,35 @@ export default function RoutineDetailsScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'workouts' && styles.activeTab]}
+          onPress={() => setActiveTab('workouts')}
+        >
+          <Ionicons 
+            name="barbell" 
+            size={20} 
+            color={activeTab === 'workouts' ? '#007AFF' : '#999'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'workouts' && styles.activeTabText]}>
+            Workouts
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'calendar' && styles.activeTab]}
+          onPress={() => setActiveTab('calendar')}
+        >
+          <Ionicons 
+            name="calendar" 
+            size={20} 
+            color={activeTab === 'calendar' ? '#007AFF' : '#999'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'calendar' && styles.activeTabText]}>
+            History
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.content}>
         <View style={styles.routineInfo}>
           {routine.isActive && (
@@ -173,41 +256,136 @@ export default function RoutineDetailsScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Workouts</Text>
-            <TouchableOpacity
-              onPress={() => router.push(`/workout/create?routineId=${id}`)}
-              style={styles.addButton}
-            >
-              <Ionicons name="add-circle" size={24} color="#007AFF" />
-              <Text style={styles.addButtonText}>Add Workout</Text>
-            </TouchableOpacity>
-          </View>
+        {activeTab === 'workouts' && (
+          <>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Workouts</Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/workout/create?routineId=${id}`)}
+                  style={styles.addButton}
+                >
+                  <Ionicons name="add-circle" size={24} color="#007AFF" />
+                  <Text style={styles.addButtonText}>Add Workout</Text>
+                </TouchableOpacity>
+              </View>
 
-          {workouts.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="fitness-outline" size={48} color="#999" />
-              <Text style={styles.emptyText}>No workouts yet</Text>
-              <Text style={styles.emptySubtext}>Add workouts to build your routine</Text>
+              {workouts.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="fitness-outline" size={48} color="#999" />
+                  <Text style={styles.emptyText}>No workouts yet</Text>
+                  <Text style={styles.emptySubtext}>Add workouts to build your routine</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={workouts.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))}
+                  renderItem={renderWorkout}
+                  keyExtractor={(item) => item.id}
+                  scrollEnabled={false}
+                />
+              )}
             </View>
-          ) : (
-            <FlatList
-              data={workouts.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))}
-              renderItem={renderWorkout}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-            />
-          )}
-        </View>
 
-        <TouchableOpacity
-          style={styles.startButton}
-          onPress={() => router.push(`/routine/${id}/start`)}
-        >
-          <Ionicons name="play-circle" size={24} color="#FFF" />
-          <Text style={styles.startButtonText}>Start This Routine</Text>
-        </TouchableOpacity>
+            {routine.isActive && workouts.length > 0 && (
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={() => router.push(`/routine/${id}/start`)}
+              >
+                <Ionicons name="play-circle" size={24} color="#FFF" />
+                <Text style={styles.startButtonText}>Start Workout Session</Text>
+              </TouchableOpacity>
+            )}
+
+            {!routine.isActive && (
+              <View style={styles.inactiveNotice}>
+                <Ionicons name="information-circle" size={24} color="#FF9500" />
+                <View style={styles.inactiveNoticeContent}>
+                  <Text style={styles.inactiveNoticeTitle}>Inactive Routine</Text>
+                  <Text style={styles.inactiveNoticeText}>
+                    Activate this routine to start logging workouts
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {activeTab === 'calendar' && (
+          <View style={styles.section}>
+            <View style={styles.calendarContainer}>
+              <Calendar
+                markedDates={getMarkedDates()}
+                onDayPress={(day) => {
+                  const sessions = getWorkoutSessionsForDate(day.dateString);
+                  if (sessions.length > 0) {
+                    // Show sessions for this date
+                  }
+                }}
+                theme={{
+                  todayTextColor: '#007AFF',
+                  selectedDayBackgroundColor: '#007AFF',
+                  dotColor: '#34C759',
+                  arrowColor: '#007AFF',
+                }}
+              />
+            </View>
+
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
+                <Text style={styles.legendText}>Completed Workout</Text>
+              </View>
+            </View>
+
+            <View style={styles.historyList}>
+              <Text style={styles.sectionTitle}>Recent Sessions</Text>
+              {logRoutines.filter(log => log.endDatetime).slice(0, 10).map((log) => (
+                <TouchableOpacity
+                  key={log.id}
+                  style={styles.historyCard}
+                  onPress={() => router.push(`/history/routine/${log.id}`)}
+                >
+                  <View style={styles.historyHeader}>
+                    <View style={styles.historyDateContainer}>
+                      <Ionicons name="calendar" size={18} color="#007AFF" />
+                      <Text style={styles.historyDate}>
+                        {new Date(log.startDatetime).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </Text>
+                    </View>
+                    <Text style={styles.historyTime}>
+                      {formatTime(log.startDatetime)}
+                    </Text>
+                  </View>
+                  <View style={styles.historyDetails}>
+                    <View style={styles.historyDetailItem}>
+                      <Ionicons name="barbell" size={16} color="#666" />
+                      <Text style={styles.historyDetailText}>
+                        {log.logWorkouts?.length || 0} workout{log.logWorkouts?.length !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                    <View style={styles.historyDetailItem}>
+                      <Ionicons name="time" size={16} color="#666" />
+                      <Text style={styles.historyDetailText}>
+                        {calculateDuration(log.startDatetime, log.endDatetime)}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              {logRoutines.filter(log => log.endDatetime).length === 0 && (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="calendar-outline" size={48} color="#999" />
+                  <Text style={styles.emptyText}>No workout history</Text>
+                  <Text style={styles.emptySubtext}>Complete workouts to see them here</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -302,6 +480,34 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     backgroundColor: '#E5E5EA',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#999',
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   section: {
     padding: 16,
@@ -430,5 +636,108 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
+  },
+  inactiveNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF9E6',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    gap: 12,
+  },
+  inactiveNoticeContent: {
+    flex: 1,
+  },
+  inactiveNoticeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF9500',
+    marginBottom: 4,
+  },
+  inactiveNoticeText: {
+    fontSize: 14,
+    color: '#B8860B',
+    lineHeight: 20,
+  },
+  calendarContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  legendContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  historyDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyDate: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  historyTime: {
+    fontSize: 14,
+    color: '#666',
+  },
+  historyDetails: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  historyDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyDetailText: {
+    fontSize: 14,
+    color: '#666',
   },
 });

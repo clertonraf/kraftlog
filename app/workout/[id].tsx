@@ -45,8 +45,8 @@ export default function WorkoutDetailsScreen() {
     const confirmDelete = async () => {
       try {
         const updatedExerciseIds = workout.exercises
-          ?.filter(e => e.id !== exerciseId)
-          .map(e => e.id) || [];
+          ?.filter(e => e.exerciseId !== exerciseId)
+          .map(e => e.exerciseId) || [];
         
         await workoutService.updateWorkout(workout.id, {
           name: workout.name,
@@ -101,9 +101,9 @@ export default function WorkoutDetailsScreen() {
             <View style={styles.orderBadge}>
               <Text style={styles.orderBadgeText}>{index + 1}</Text>
             </View>
-            <Text style={styles.exerciseName}>{item.name}</Text>
+            <Text style={styles.exerciseName}>{item.exerciseName}</Text>
           </View>
-          {item.youtubeUrl && (
+          {item.videoUrl && (
             <Text style={styles.exerciseLink} numberOfLines={1}>
               <Ionicons name="logo-youtube" size={14} color="#FF0000" /> Video available
             </Text>
@@ -112,21 +112,12 @@ export default function WorkoutDetailsScreen() {
         {isAdmin && (
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => handleDeleteExercise(item.id)}
+            onPress={() => handleDeleteExercise(item.exerciseId)}
           >
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           </TouchableOpacity>
         )}
       </View>
-      {item.muscles && item.muscles.length > 0 && (
-        <View style={styles.musclesRow}>
-          {item.muscles.map((muscle) => (
-            <View key={muscle.id} style={styles.muscleBadge}>
-              <Text style={styles.muscleBadgeText}>{muscle.name}</Text>
-            </View>
-          ))}
-        </View>
-      )}
     </View>
   );
 
@@ -197,7 +188,7 @@ export default function WorkoutDetailsScreen() {
             <FlatList
               data={workout.exercises}
               renderItem={renderExercise}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item, index) => item.exerciseId || `exercise-${index}`}
               scrollEnabled={false}
             />
           ) : (

@@ -53,6 +53,16 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.cardTitle}>Quick Actions</Text>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => router.push('/history')}
+          >
+            <Text style={styles.actionButtonText}>📊 View Workout History</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Quick Stats</Text>
           <Text style={styles.comingSoon}>Coming soon...</Text>
         </View>
@@ -122,6 +132,18 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  actionButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   logoutButton: {
     backgroundColor: '#FF3B30',

@@ -44,14 +44,29 @@ export default function StartRoutineScreen() {
     }
   };
 
-  const handleStartRoutine = async () => {
+  const handleStartWorkout = async (workoutId: string) => {
     if (!user?.id || !id) return;
 
-    const msg = 'Routine logging feature coming soon!';
-    if (Platform.OS === 'web') {
-      alert(msg);
-    } else {
-      Alert.alert('Coming Soon', msg);
+    setStarting(true);
+    try {
+      const logRoutine = await logRoutineService.createLogRoutine({
+        routineId: id,
+        startDatetime: new Date().toISOString(),
+      });
+
+      router.push({
+        pathname: `/workout/session/[workoutId]`,
+        params: { workoutId, logRoutineId: logRoutine.id },
+      });
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to start workout';
+      if (Platform.OS === 'web') {
+        alert(`Error: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -89,7 +104,11 @@ export default function StartRoutineScreen() {
           <Text style={styles.sectionTitle}>Workout Plan ({workouts.length} workouts)</Text>
           
           {workouts.map((workout, index) => (
-            <View key={workout.id} style={styles.workoutCard}>
+            <TouchableOpacity 
+              key={workout.id} 
+              style={styles.workoutCard}
+              onPress={() => handleStartWorkout(workout.id)}
+            >
               <View style={styles.workoutHeader}>
                 <View style={styles.orderBadge}>
                   <Text style={styles.orderText}>{index + 1}</Text>
@@ -101,7 +120,7 @@ export default function StartRoutineScreen() {
                     {workout.intervalMinutes ? ` • ${workout.intervalMinutes} min rest` : ''}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color="#999" />
+                <Ionicons name="play-circle" size={32} color="#34C759" />
               </View>
               
               {workout.exercises && workout.exercises.length > 0 && (
@@ -118,7 +137,7 @@ export default function StartRoutineScreen() {
                   )}
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -127,30 +146,11 @@ export default function StartRoutineScreen() {
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>Ready to start?</Text>
             <Text style={styles.infoText}>
-              You'll work through each workout in order. Track your sets, reps, and weight for each exercise.
+              Tap on any workout above to start your session. Track your sets, reps, and weight for each exercise.
             </Text>
           </View>
         </View>
       </ScrollView>
-
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={[styles.startButton, starting && styles.startButtonDisabled]}
-          onPress={handleStartRoutine}
-          disabled={starting || workouts.length === 0}
-        >
-          {starting ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <>
-              <Ionicons name="play" size={24} color="#FFF" />
-              <Text style={styles.startButtonText}>
-                Start Now
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }

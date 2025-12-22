@@ -1,8 +1,15 @@
 import api from './api';
 import { ExerciseResponse, MuscleResponse } from './exerciseService';
 
-export interface WorkoutExerciseResponse extends ExerciseResponse {
-  // Extends ExerciseResponse with any workout-specific properties if needed
+export interface WorkoutExerciseResponse {
+  exerciseId: string;
+  exerciseName: string;
+  exerciseDescription?: string;
+  videoUrl?: string;
+  recommendedSets?: number;
+  recommendedReps?: number;
+  trainingTechnique?: string;
+  orderIndex?: number;
 }
 
 export interface WorkoutResponse {

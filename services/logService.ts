@@ -4,8 +4,8 @@ export interface LogSetResponse {
   id: string;
   logExerciseId: string;
   setNumber: number;
-  reps: number;
-  weightKg: number;
+  reps: number | null;
+  weightKg: number | null;
   restTimeSeconds?: number;
   timestamp: string;
   notes?: string;
@@ -14,8 +14,8 @@ export interface LogSetResponse {
 export interface LogSetCreateRequest {
   logExerciseId: string;
   setNumber: number;
-  reps: number;
-  weightKg: number;
+  reps: number | null;
+  weightKg: number | null;
   restTimeSeconds?: number;
   notes?: string;
 }
@@ -24,6 +24,7 @@ export interface LogExerciseResponse {
   id: string;
   logWorkoutId: string;
   exerciseId: string;
+  exerciseName?: string;
   startDatetime?: string;
   endDatetime?: string;
   notes?: string;
@@ -61,17 +62,15 @@ export interface LogWorkoutCreateRequest {
 export interface LogRoutineResponse {
   id: string;
   routineId: string;
-  userId: string;
-  startDate: string;
-  endDate?: string;
+  startDatetime: string;
+  endDatetime?: string;
   logWorkouts: LogWorkoutResponse[];
 }
 
 export interface LogRoutineCreateRequest {
   routineId: string;
-  userId: string;
-  startDate: string;
-  endDate?: string;
+  startDatetime: string;
+  endDatetime?: string;
 }
 
 export const logRoutineService = {
@@ -90,6 +89,16 @@ export const logRoutineService = {
     return response.data;
   },
 
+  async getLogRoutinesByUserId(userId: string): Promise<LogRoutineResponse[]> {
+    const response = await api.get<LogRoutineResponse[]>(`/log-routines/user/${userId}`);
+    return response.data;
+  },
+
+  async getLogRoutinesByRoutineId(routineId: string): Promise<LogRoutineResponse[]> {
+    const response = await api.get<LogRoutineResponse[]>(`/log-routines/routine/${routineId}`);
+    return response.data;
+  },
+
   async updateLogRoutine(id: string, data: Partial<LogRoutineCreateRequest>): Promise<LogRoutineResponse> {
     const response = await api.put<LogRoutineResponse>(`/log-routines/${id}`, data);
     return response.data;
@@ -100,8 +109,16 @@ export const logRoutineService = {
   },
 
   async completeLogRoutine(id: string): Promise<LogRoutineResponse> {
+    // First fetch the current log routine to get required fields
+    const logRoutine = await api.get<LogRoutineResponse>(`/log-routines/${id}`);
     const now = new Date().toISOString();
-    const response = await api.put<LogRoutineResponse>(`/log-routines/${id}`, { endDate: now });
+    
+    // Update with all required fields
+    const response = await api.put<LogRoutineResponse>(`/log-routines/${id}`, {
+      routineId: logRoutine.data.routineId,
+      startDatetime: logRoutine.data.startDatetime,
+      endDatetime: now,
+    });
     return response.data;
   },
 };
@@ -130,6 +147,18 @@ export const logWorkoutService = {
     const now = new Date().toISOString();
     const response = await api.put<LogWorkoutResponse>(`/log-workouts/${id}`, { endDatetime: now });
     return response.data;
+  },
+
+  async getLastCompletedWorkout(workoutId: string): Promise<LogWorkoutResponse | null> {
+    try {
+      const response = await api.get<LogWorkoutResponse>(`/log-workouts/workout/${workoutId}/last`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 };
 
