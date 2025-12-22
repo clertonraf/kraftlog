@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
@@ -21,6 +22,8 @@ export default function HomeScreen() {
           <Text style={styles.title}>Welcome to KraftLog!</Text>
           <Text style={styles.subtitle}>Hello, {user?.name}!</Text>
         </View>
+
+        <SyncStatusIndicator />
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Your Profile</Text>

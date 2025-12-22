@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { OfflineProvider } from '@/contexts/OfflineContext';
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
@@ -37,7 +38,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <OfflineProvider>
+        <RootLayoutNav />
+      </OfflineProvider>
     </AuthProvider>
   );
 }
