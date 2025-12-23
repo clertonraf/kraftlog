@@ -1,60 +1,202 @@
 # One Command E2E Testing
 
-## TL;DR
+## Quick Start
+
+### First Time Setup (One Time Only)
+
+```bash
+# Terminal 1: Start Expo
+npx expo start
+
+# Wait for it to show "Metro waiting on..."
+# Then press 'i' to install in simulator
+```
+
+### Run Tests
+
+After the app is installed once, you can run tests anytime with:
 
 ```bash
 npm test
 ```
 
-That's it! This single command will:
-1. ✅ Start backend (if not running)
-2. ✅ Start Expo (if not running)
-3. ✅ Boot iOS Simulator (if needed)
-4. ✅ Install app (if not installed)
-5. ✅ Run smoke tests
+## What `npm test` Does
 
-## Prerequisites
+1. ✅ Checks backend (starts if needed)
+2. ✅ Checks Expo (starts in background if needed)
+3. ✅ Checks iOS Simulator (boots if needed)
+4. ✅ Checks app installation
+5. ✅ Runs smoke tests (2 critical flows)
 
-The first time you run this, make sure you have:
+## Recommended Workflow
 
-1. **Docker Desktop** running
-2. **Xcode Command Line Tools** installed
+### Option 1: Keep Expo Running (Recommended)
 
-That's all you need!
+```bash
+# Terminal 1: Start Expo once
+npx expo start
+# Press 'i' to install app
 
-## Usage
+# Terminal 2: Run tests anytime
+npm test
+```
 
-### Run Tests (One Command)
+This is the most reliable approach. Expo stays running, and you can run tests whenever you want.
+
+### Option 2: Full Automation
+
 ```bash
 npm test
 ```
 
-### Alternative Commands
+The script will try to:
+- Start backend automatically ✅
+- Start Expo in background ⚠️ (works, but slower)
+- Install app automatically ⚠️ (may need manual 'i' press)
+- Run tests ✅
 
-If you already have Expo running in another terminal:
+**Note:** The first time, you may still need to manually press 'i' in the Expo terminal to install the app.
+
+## All Available Commands
+
 ```bash
+# One command (handles everything)
+npm test
+
+# Smoke tests only (requires Expo running)
+npm run test:e2e:smoke
+
+# All tests (6 flows)
+npm run test:e2e
+
+# Watch mode (re-run on changes)
+npm run test:e2e:watch
+
+# With HTML report
+npm run test:e2e:report
+```
+
+## What Gets Tested
+
+### Smoke Tests (`npm test`)
+- ✅ App launches successfully  
+- ✅ Login flow works
+- ✅ Tab navigation works
+- ✅ Backend connectivity
+
+### Full Suite (`npm run test:e2e`)
+All smoke tests plus:
+- ✅ Routines management
+- ✅ Workout history
+- ✅ Logout functionality
+- ✅ Sync status indicators
+
+## Troubleshooting
+
+### Tests fail with "Unable to launch app"
+
+**Solution:** Install the app first
+
+```bash
+# If Expo is running, press 'i' in that terminal
+# Or start fresh:
+npx expo start
+# Press 'i'
+# Then in another terminal:
+npm test
+```
+
+### "Backend did not start"
+
+```bash
+# Check Docker
+docker ps
+
+# Restart backend
+docker-compose restart backend
+
+# Wait 30 seconds, then:
+npm test
+```
+
+### "Expo failed to start"
+
+```bash
+# Start Expo manually instead
+npx expo start
+
+# In another terminal:
 npm run test:e2e:smoke
 ```
 
-Run all tests (not just smoke):
+### App shows network error
+
 ```bash
-npm run test:e2e
+# Delete and reinstall app
+./scripts/reset-simulator-app.sh
+
+# Then in Expo terminal, press: i
+# Then:
+npm test
 ```
 
-Run tests in watch mode (re-run on changes):
-```bash
-npm run test:e2e:watch
+## CI/CD Integration
+
+For automated testing in CI:
+
+```yaml
+- name: Start Backend
+  run: docker-compose up -d
+
+- name: Wait for Backend
+  run: sleep 30
+
+- name: Start Expo
+  run: npx expo start &
+
+- name: Install App
+  run: |
+    # Wait for Expo to be ready
+    sleep 20
+    # Trigger install (this may need custom solution for CI)
+
+- name: Run E2E Tests
+  run: npm run test:e2e:smoke
 ```
 
-## What Happens
+## Success Indicators
 
-When you run `npm test`:
+Before running tests, verify:
+
+```bash
+# Backend running
+curl http://localhost:8080/api/auth/login -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test","password":"test"}'
+# Should get HTTP 400 (this is good - means backend responds)
+
+# Expo running
+ps aux | grep "expo start"
+# Should show a process
+
+# Simulator booted
+xcrun simctl list devices | grep Booted
+# Should show your simulator
+
+# App installed
+xcrun simctl listapps booted | grep kraftlog
+# Should show the app
+```
+
+## Expected Output
+
+When everything works:
 
 ```
 🚀 KraftLog E2E Tests - One Command Runner
 
 1️⃣  Checking backend...
-   ✅ Backend already running
+   ✅ Backend responding (HTTP 400)
 
 2️⃣  Checking Expo...
    ✅ Expo is running
@@ -80,110 +222,12 @@ Waiting for flows to complete...
 ✅ All tests passed!
 ```
 
-## Manual Testing (If Automation Fails)
+## Best Practice
 
-If the one-command approach doesn't work:
+**For development:**
+1. Start Expo once: `npx expo start`
+2. Press 'i' to install app (one time)
+3. Leave Expo running
+4. Run `npm test` whenever you want to test
 
-```bash
-# Terminal 1: Start backend
-./scripts/start-backend.sh
-
-# Terminal 2: Start Expo
-npx expo start
-# Press 'i' to install in simulator
-
-# Terminal 3: Run tests
-npm run test:e2e:smoke
-```
-
-## Troubleshooting
-
-### "Backend did not start"
-```bash
-docker-compose restart backend
-# Wait 30 seconds
-npm test
-```
-
-### "App not installed"
-```bash
-# Manually install
-npx expo start
-# Press 'i' in the Expo terminal
-# Then:
-npm test
-```
-
-### "Expo failed to start"
-```bash
-# Clear cache and try again
-npx expo start --clear
-# In another terminal:
-npm run test:e2e:smoke
-```
-
-### "Simulator not booting"
-```bash
-# Open Simulator manually
-open -a Simulator
-# Wait for it to fully load, then:
-npm test
-```
-
-## CI/CD Integration
-
-For GitHub Actions or other CI systems:
-
-```yaml
-- name: Run E2E Tests
-  run: |
-    npm test
-```
-
-The script handles all setup automatically!
-
-## What Gets Tested
-
-### Smoke Tests (default with `npm test`)
-- ✅ App launches successfully
-- ✅ Login flow works
-- ✅ Tab navigation works
-- ✅ Backend connectivity
-
-### Full Test Suite (`npm run test:e2e`)
-- All smoke tests +
-- ✅ Routines management
-- ✅ Workout history
-- ✅ Logout functionality
-- ✅ Sync indicators
-- ✅ More comprehensive flows
-
-## Architecture
-
-The one-command test runner:
-1. Checks if backend is responding (port 8080)
-2. Starts Docker Compose if needed
-3. Checks if Expo is running
-4. Starts Expo in background if needed
-5. Checks if iOS Simulator is booted
-6. Boots simulator if needed
-7. Checks if app is installed
-8. Installs app via Expo URL if needed
-9. Runs Maestro E2E tests
-10. Cleans up background processes
-
-All of this in one command: `npm test` 🚀
-
-## Success Rate
-
-The automation handles:
-- ✅ 95% of scenarios automatically
-- ⚠️ 5% may need manual Expo start (first run)
-
-If first run fails, just do:
-```bash
-npx expo start  # In one terminal
-npm test        # In another terminal
-```
-
-After that, `npm test` alone will work!
+This gives you the fastest feedback loop! 🚀

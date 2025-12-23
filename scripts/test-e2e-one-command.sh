@@ -26,9 +26,10 @@ wait_for_backend() {
     local attempt=0
     
     while [ $attempt -lt $max_attempts ]; do
-        if curl -f -s http://localhost:8080/api/auth/login -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"email":"test","password":"test"}' > /dev/null 2>&1; then
+        # Check if backend responds (any HTTP response is good)
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login \
+            -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' \
+            | grep -q "^[0-9]"; then
             echo -e "${GREEN}✅ Backend is ready!${NC}"
             return 0
         fi
@@ -42,16 +43,20 @@ wait_for_backend() {
 
 # Step 1: Start backend
 echo "1️⃣  Checking backend..."
-if ! curl -f -s http://localhost:8080/api/auth/login -X POST \
-    -H "Content-Type: application/json" \
-    -d '{"email":"test","password":"test"}' > /dev/null 2>&1; then
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login \
+    -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' 2>/dev/null || echo "000")
+
+if [ "$HTTP_CODE" = "000" ]; then
     echo "   Starting backend..."
     docker-compose up -d > /dev/null 2>&1
     if ! wait_for_backend; then
+        echo ""
+        echo "Troubleshooting:"
+        echo "  docker-compose logs backend --tail 20"
         exit 1
     fi
 else
-    echo -e "   ${GREEN}✅ Backend already running${NC}"
+    echo -e "   ${GREEN}✅ Backend responding (HTTP $HTTP_CODE)${NC}"
 fi
 echo ""
 
@@ -65,8 +70,8 @@ else
     echo "   Starting Expo in background..."
     npx expo start > /tmp/expo-test.log 2>&1 &
     EXPO_BG_PID=$!
-    echo "   ⏳ Waiting for Expo to start..."
-    sleep 10
+    echo "   ⏳ Waiting for Expo to start (15 seconds)..."
+    sleep 15
     
     if pgrep -f "expo start" > /dev/null; then
         echo -e "   ${GREEN}✅ Expo started${NC}"
@@ -87,8 +92,14 @@ if [ -z "$SIMULATOR_UDID" ]; then
     echo "   Booting simulator..."
     # Get latest iPhone simulator
     SIMULATOR_UDID=$(xcrun simctl list devices | grep "iPhone" | tail -1 | grep -o '\([A-F0-9-]\{36\}\)')
+    if [ -z "$SIMULATOR_UDID" ]; then
+        echo -e "${RED}❌ No simulator found${NC}"
+        echo "   Please open Simulator manually"
+        exit 1
+    fi
     xcrun simctl boot "$SIMULATOR_UDID" > /dev/null 2>&1 || true
-    sleep 5
+    echo "   ⏳ Waiting for simulator to boot..."
+    sleep 10
     echo -e "   ${GREEN}✅ Simulator booted${NC}"
 else
     echo -e "   ${GREEN}✅ Simulator already booted${NC}"
@@ -110,8 +121,14 @@ else
     if xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "org.reactjs.native.example.kraftlog"; then
         echo -e "   ${GREEN}✅ App installed${NC}"
     else
-        echo -e "   ${YELLOW}⚠️  App might not be fully installed. Continuing anyway...${NC}"
-        echo "   If tests fail, manually press 'i' in Expo terminal"
+        echo -e "   ${YELLOW}⚠️  App might not be fully installed${NC}"
+        echo "   You may need to manually press 'i' in Expo terminal"
+        echo ""
+        read -p "   Continue with tests anyway? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
     fi
 fi
 echo ""
@@ -139,8 +156,8 @@ else
     echo ""
     echo "Troubleshooting tips:"
     echo "1. Check if app is showing on simulator"
-    echo "2. Try manually: npx expo start, press 'i', then run tests"
-    echo "3. Check logs: docker-compose logs backend"
+    echo "2. Try manually: npx expo start, press 'i', then run: npm run test:e2e:smoke"
+    echo "3. Check backend: docker-compose logs backend --tail 20"
 fi
 
 exit $TEST_EXIT_CODE
