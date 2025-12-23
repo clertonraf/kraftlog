@@ -108,29 +108,23 @@ echo ""
 
 # Step 4: Check app installation
 echo "4️⃣  Checking app installation..."
-if xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "org.reactjs.native.example.kraftlog"; then
-    echo -e "   ${GREEN}✅ App is installed${NC}"
+# For Expo Go, we check if Expo Go itself is installed
+if xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "host.exp.Exponent"; then
+    echo -e "   ${GREEN}✅ Expo Go is installed${NC}"
 else
-    echo "   App not installed. Installing..."
-    echo "   Opening Expo URL..."
-    xcrun simctl openurl "$SIMULATOR_UDID" "exp://localhost:8081" 2>/dev/null || true
-    
-    echo "   ⏳ Waiting for app installation (45 seconds)..."
-    sleep 45
-    
-    if xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "org.reactjs.native.example.kraftlog"; then
-        echo -e "   ${GREEN}✅ App installed${NC}"
-    else
-        echo -e "   ${YELLOW}⚠️  App might not be fully installed${NC}"
-        echo "   You may need to manually press 'i' in Expo terminal"
-        echo ""
-        read -p "   Continue with tests anyway? (y/n) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    fi
+    echo "   Expo Go not installed. Please install Expo Go on simulator first."
+    echo "   Opening App Store..."
+    xcrun simctl openurl "$SIMULATOR_UDID" "https://apps.apple.com/app/apple-store/id982107779" 2>/dev/null || true
+    echo ""
+    read -p "   After installing Expo Go, press Enter to continue..." 
 fi
+
+# Open the app in Expo Go
+echo "   Opening app in Expo Go..."
+xcrun simctl openurl "$SIMULATOR_UDID" "exp://localhost:8081" 2>/dev/null || true
+echo "   ⏳ Waiting for app to load (10 seconds)..."
+sleep 10
+echo -e "   ${GREEN}✅ App should be ready${NC}"
 echo ""
 
 # Step 5: Run tests

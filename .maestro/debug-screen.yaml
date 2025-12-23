@@ -1,4 +1,4 @@
-appId: org.reactjs.native.example.kraftlog
+appId: host.exp.Exponent
 ---
 - launchApp
 - clearState
@@ -6,4 +6,3 @@ appId: org.reactjs.native.example.kraftlog
 - takeScreenshot: debug-initial-screen.png
 - assertVisible: 
     text: ".*"
-    timeout: 1000
