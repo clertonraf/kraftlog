@@ -1,4 +1,4 @@
-appId: com.clerton.kraftlog
+appId: org.reactjs.native.example.kraftlog
 ---
 # Routines Tab Navigation Test
 # Tests: Home → Routines tab → View routine list

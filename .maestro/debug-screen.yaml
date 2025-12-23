@@ -1,4 +1,4 @@
-appId: com.clerton.kraftlog
+appId: org.reactjs.native.example.kraftlog
 ---
 - launchApp
 - clearState

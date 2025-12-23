@@ -1,4 +1,4 @@
-appId: com.clerton.kraftlog
+appId: org.reactjs.native.example.kraftlog
 ---
 # Workout History Flow Test
 # Tests: Home → Quick Actions → Workout History

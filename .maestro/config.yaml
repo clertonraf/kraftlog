@@ -2,7 +2,7 @@
 # Global configuration for all Maestro tests
 
 # App configuration
-appId: com.clerton.kraftlog
+appId: org.reactjs.native.example.kraftlog
 
 # Default delays
 defaults:

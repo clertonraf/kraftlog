@@ -1,4 +1,4 @@
-appId: com.clerton.kraftlog
+appId: org.reactjs.native.example.kraftlog
 ---
 # Sync Status Test
 # Tests: Verify sync indicator is visible and functional

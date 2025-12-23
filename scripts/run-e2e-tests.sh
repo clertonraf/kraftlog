@@ -32,11 +32,11 @@ reset_simulator() {
     
     # Terminate the app if running
     echo "📱 Terminating app..."
-    xcrun simctl terminate "$SIMULATOR_UDID" com.clerton.kraftlog 2>/dev/null || true
+    xcrun simctl terminate "$SIMULATOR_UDID" org.reactjs.native.example.kraftlog 2>/dev/null || true
     
     # Clear app data using simctl privacy
     echo "🗑️  Clearing app data..."
-    xcrun simctl privacy "$SIMULATOR_UDID" reset all com.clerton.kraftlog 2>/dev/null || true
+    xcrun simctl privacy "$SIMULATOR_UDID" reset all org.reactjs.native.example.kraftlog 2>/dev/null || true
     
     echo "✅ Simulator reset complete"
     echo ""
