@@ -30,28 +30,47 @@ reset_simulator() {
         sleep 5
     fi
     
-    # Terminate the app if running
-    echo "📱 Terminating app..."
+    # Kill the app completely to force reload
+    echo "📱 Killing app to force reload..."
     xcrun simctl terminate "$SIMULATOR_UDID" org.reactjs.native.example.kraftlog 2>/dev/null || true
+    killall "Expo Go" 2>/dev/null || true
     
     # Clear app data using simctl privacy
     echo "🗑️  Clearing app data..."
     xcrun simctl privacy "$SIMULATOR_UDID" reset all org.reactjs.native.example.kraftlog 2>/dev/null || true
+    
+    # Wait a moment for cleanup
+    sleep 2
     
     echo "✅ Simulator reset complete"
     echo ""
 }
 
 # Check if backend is running
-if ! curl -f http://localhost:8080/actuator/health &> /dev/null; then
-    echo "⚠️  Backend API is not running"
-    echo "Please start it with: ./scripts/start-backend.sh"
+if ! curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' &> /dev/null; then
+    echo "⚠️  Backend API is not responding"
     echo ""
-    read -p "Continue anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+    echo "Starting backend with Docker Compose..."
+    docker-compose up -d 2>/dev/null || true
+    echo "⏳ Waiting for backend to start..."
+    sleep 15
+    
+    if ! curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' &> /dev/null; then
+        echo "⚠️  Backend still not responding"
+        echo "Please start it manually with: ./scripts/start-backend.sh"
+        echo ""
+        read -p "Continue anyway? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        echo "✅ Backend is running"
+        echo ""
     fi
+else
+    echo "✅ Backend API is running"
+    echo ""
 fi
 
 # Reset simulator before running tests
