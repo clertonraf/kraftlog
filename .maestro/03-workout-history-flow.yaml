@@ -1,0 +1,31 @@
+appId: com.clerton.kraftlog
+---
+# Workout History Flow Test
+# Tests: Home → Quick Actions → Workout History
+
+- launchApp
+
+# Login
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+
+# Wait for home screen
+- assertVisible: "Welcome to KraftLog!"
+
+# Tap on Workout History quick action
+- tapOn: "📊 View Workout History"
+
+# Verify history screen
+- assertVisible: "Workout History"
+
+# Check for back button
+- assertVisible:
+    id: "back-button"
+    optional: true
+
+# Go back to home
+- back
+- assertVisible: "Welcome to KraftLog!"

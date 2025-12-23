@@ -1,0 +1,25 @@
+appId: com.clerton.kraftlog
+---
+# Routines Tab Navigation Test
+# Tests: Home → Routines tab → View routine list
+
+- launchApp
+
+# Login first
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+
+# Wait for home screen
+- assertVisible: "Welcome to KraftLog!"
+
+# Navigate to Routines tab
+- tapOn: "Routines"
+- assertVisible: "My Routines"
+
+# Verify routines interface
+- assertVisible:
+    text: "Create New Routine"
+    optional: true

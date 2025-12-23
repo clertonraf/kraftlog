@@ -1,0 +1,27 @@
+appId: com.clerton.kraftlog
+---
+# Logout Flow Test
+# Tests: Home → Logout → Login screen
+
+- launchApp
+
+# Login
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+
+# Wait for home screen
+- assertVisible: "Welcome to KraftLog!"
+
+# Scroll down to find logout button
+- scroll
+
+# Tap logout
+- tapOn: "Logout"
+
+# Verify we're back at login
+- assertVisible: "Sign in to your account"
+- assertVisible: "Email"
+- assertVisible: "Password"

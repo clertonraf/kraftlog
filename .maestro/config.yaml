@@ -1,0 +1,15 @@
+# Maestro Configuration
+# Global configuration for all Maestro tests
+
+# App configuration
+appId: com.clerton.kraftlog
+
+# Default delays
+defaults:
+  animationDuration: 300
+  idleTimeout: 3000
+
+# Environment variables
+env:
+  ADMIN_EMAIL: admin@kraftlog.com
+  ADMIN_PASSWORD: admin123

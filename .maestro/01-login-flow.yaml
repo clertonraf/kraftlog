@@ -1,0 +1,25 @@
+appId: com.clerton.kraftlog
+---
+# Login Flow Test
+# Tests: Login screen → Home screen with user details
+
+- launchApp
+- assertVisible: "Sign in to your account"
+
+# Enter credentials
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+
+- tapOn: "Password"
+- inputText: "admin123"
+
+# Submit login
+- tapOn: "Sign In"
+
+# Verify successful login
+- assertVisible: "Welcome to KraftLog!"
+- assertVisible: "Hello, Admin!"
+
+# Verify profile info is displayed
+- assertVisible: "Your Profile"
+- assertVisible: "admin@kraftlog.com"

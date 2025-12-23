@@ -1,0 +1,36 @@
+appId: com.clerton.kraftlog
+---
+# Tab Navigation Test
+# Tests: Navigate through all bottom tabs
+
+- launchApp
+
+# Login
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+
+# Home tab
+- assertVisible: "Welcome to KraftLog!"
+
+# Routines tab
+- tapOn: "Routines"
+- assertVisible: "My Routines"
+
+# Exercises tab
+- tapOn: "Exercises"
+- assertVisible:
+    text: "Exercises"
+    optional: true
+
+# Settings tab
+- tapOn: "Settings"
+- assertVisible:
+    text: "Settings"
+    optional: true
+
+# Go back to Home
+- tapOn: "Home"
+- assertVisible: "Welcome to KraftLog!"

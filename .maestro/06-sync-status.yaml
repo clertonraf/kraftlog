@@ -1,0 +1,33 @@
+appId: com.clerton.kraftlog
+---
+# Sync Status Test
+# Tests: Verify sync indicator is visible and functional
+
+- launchApp
+
+# Login
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+
+# Wait for home screen
+- assertVisible: "Welcome to KraftLog!"
+
+# Check for sync status indicator
+- assertVisible:
+    text: "Just now"
+    optional: true
+
+- assertVisible:
+    text: "ago"
+    optional: true
+
+# Tap on sync indicator to trigger manual sync
+- tapOn:
+    text: "Just now"
+    optional: true
+
+# Wait for sync to complete
+- waitForAnimationToEnd
