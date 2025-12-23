@@ -1,16 +1,15 @@
 appId: com.clerton.kraftlog
 ---
 # Tab Navigation Test
-# Tests: Navigate through all bottom tabs
+# Tests: Navigate through bottom tabs
 
 - launchApp
 
-# Ensure we're logged in
+# Ensure logged in
 - runFlow:
     when:
       visible: "Email"
     commands:
-      # On login screen, login first
       - tapOn: "Email"
       - inputText: "admin@kraftlog.com"
       - tapOn: "Password"
@@ -18,14 +17,15 @@ appId: com.clerton.kraftlog
       - tapOn: "Sign In"
       - waitForAnimationToEnd
 
-# Home tab
+# Verify Home tab
 - assertVisible: "Welcome to KraftLog!"
 
-# Routines tab
+# Navigate to Routines tab
 - tapOn: "Routines"
 - waitForAnimationToEnd
 - assertVisible: "My Routines"
 
-# Go back to Home
+# Back to Home tab
 - tapOn: "Home"
+- waitForAnimationToEnd
 - assertVisible: "Welcome to KraftLog!"

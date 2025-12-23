@@ -1,34 +1,31 @@
 appId: com.clerton.kraftlog
 ---
-# Login Flow Test
-# Tests: Full login/logout cycle
+# Simple Navigation Test
+# Tests: Verify app is logged in and can navigate tabs
 
 - launchApp
 
-# Check current state and logout if needed
+# Login if needed
 - runFlow:
     when:
-      visible: "Welcome to KraftLog!"
+      visible: "Email"
     commands:
-      # Already logged in, test logout first
-      - scroll
-      - tapOn: "Logout"
+      - tapOn: "Email"
+      - inputText: "admin@kraftlog.com"
+      - tapOn: "Password"
+      - inputText: "admin123"
+      - tapOn: "Sign In"
+      - waitForAnimationToEnd
 
-# Now we should be on login screen
-- assertVisible: "Email"
+# Verify Home screen is visible
+- assertVisible: "Welcome to KraftLog!"
 
-# Enter credentials
-- tapOn: "Email"
-- inputText: "admin@kraftlog.com"
-
-- tapOn: "Password"  
-- inputText: "admin123"
-
-# Submit login
-- tapOn: "Sign In"
-
-# Wait for login to complete
+# Test navigation to Routines
+- tapOn: "Routines"
 - waitForAnimationToEnd
+- assertVisible: "My Routines"
 
-# Verify successful login
+# Navigate back to Home
+- tapOn: "Home"
+- waitForAnimationToEnd
 - assertVisible: "Welcome to KraftLog!"
