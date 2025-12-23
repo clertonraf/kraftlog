@@ -24,9 +24,6 @@ services:
   backend:
     image: kraftlog-api:latest
     container_name: kraftlog-backend
-    build:
-      context: ../KraftLogApi
-      dockerfile: Dockerfile
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kraftlog
       SPRING_DATASOURCE_USERNAME: postgres

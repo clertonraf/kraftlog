@@ -10,11 +10,16 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if KraftLogApi exists
-if [ ! -d "../KraftLogApi" ]; then
-    echo "❌ KraftLogApi repository not found at ../KraftLogApi"
-    echo "Please clone the repository first:"
-    echo "  cd .. && git clone https://github.com/clertonraf/KraftLogApi.git"
+# Check if kraftlog-api image exists
+if ! docker image inspect kraftlog-api:latest > /dev/null 2>&1; then
+    echo "⚠️  kraftlog-api:latest image not found"
+    echo ""
+    echo "Please build the image first from KraftLogApi repository:"
+    echo "  cd ../KraftLogApi"
+    echo "  docker build -t kraftlog-api:latest ."
+    echo ""
+    echo "Or pull from registry (if available):"
+    echo "  docker pull <registry>/kraftlog-api:latest"
     exit 1
 fi
 
