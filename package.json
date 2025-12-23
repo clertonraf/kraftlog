@@ -9,6 +9,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "./scripts/test-e2e-one-command.sh",
     "test:e2e": "./scripts/run-e2e-tests.sh all",
     "test:e2e:smoke": "./scripts/run-e2e-tests.sh smoke",
     "test:e2e:report": "./scripts/run-e2e-tests.sh report",
