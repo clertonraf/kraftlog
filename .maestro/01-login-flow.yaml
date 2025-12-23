@@ -3,14 +3,12 @@ appId: com.clerton.kraftlog
 # Simple Navigation Test
 # Tests: Verify app login and tab navigation
 
-- launchApp:
-    clearState: true
-    stopApp: true
+- launchApp
 
-# Wait for app to start fresh
+# Wait for app to start
 - waitForAnimationToEnd
 
-# Should be on login screen after clear state
+# Should be on login screen (data was cleared by test script)
 - assertVisible: "Email"
 
 # Login
