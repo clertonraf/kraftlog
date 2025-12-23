@@ -8,10 +8,8 @@ appId: host.exp.Exponent
 
 # Open the KraftLog app via deep link
 - openLink: exp://192.168.0.104:8081
-- waitForAnimationToEnd:
-    timeout: 10000
-- waitForAnimationToEnd:
-    timeout: 5000
+- waitForAnimationToEnd
+- wait: 5000
 
 # If we see a Retry button (network error), tap it
 - runFlow:

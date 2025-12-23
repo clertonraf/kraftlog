@@ -7,10 +7,9 @@ appId: host.exp.Exponent
 
 # Open the KraftLog app via deep link
 - openLink: exp://192.168.0.104:8081
-- waitForAnimationToEnd:
-    timeout: 10000
-- waitForAnimationToEnd:
-    timeout: 5000
+- waitForAnimationToEnd
+- wait: 5000
+- waitForAnimationToEnd
 
 # If we see a Retry button (network error), tap it
 - runFlow:
@@ -18,10 +17,8 @@ appId: host.exp.Exponent
       visible: "Retry"
     commands:
       - tapOn: "Retry"
-      - waitForAnimationToEnd:
-          timeout: 5000
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - waitForAnimationToEnd
+      - wait: 3000
 
 # Login if needed
 - runFlow:
@@ -33,15 +30,14 @@ appId: host.exp.Exponent
       - tapOn: "Password"
       - inputText: "admin123"
       - tapOn: "Sign In"
-      - waitForAnimationToEnd:
-          timeout: 10000
+      - waitForAnimationToEnd
+      - wait: 5000
 
 # Wait for home screen to load and verify we're logged in
+- wait: 5000
 - runFlow:
     when:
-      visible:
-        text: "Welcome to KraftLog!"
-        timeout: 15000
+      visible: "Welcome to KraftLog!"
     commands:
       - assertVisible: "Welcome to KraftLog!"
 
@@ -50,13 +46,11 @@ appId: host.exp.Exponent
       notVisible: "Welcome to KraftLog!"
     commands:
       # If home text not visible yet, wait more and check we're not on login
-      - waitForAnimationToEnd:
-          timeout: 5000
+      - wait: 3000
       - assertNotVisible: "Sign In"
 
 # Navigate to Routines tab
-- waitForAnimationToEnd:
-    timeout: 2000
+- wait: 2000
 
 # Tap on Routines tab
 - runFlow:
@@ -64,8 +58,8 @@ appId: host.exp.Exponent
       visible: "Routines"
     commands:
       - tapOn: "Routines"
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - waitForAnimationToEnd
+      - wait: 2000
 
 # Verify we can see routines content (be flexible about what's visible)
 - runFlow:
@@ -77,16 +71,15 @@ appId: host.exp.Exponent
           text: "(My Routines|Routines|No routines)"
 
 # Navigate to Exercises tab
-- waitForAnimationToEnd:
-    timeout: 2000
+- wait: 2000
 
 - runFlow:
     when:
       visible: "Exercises"
     commands:
       - tapOn: "Exercises"
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - waitForAnimationToEnd
+      - wait: 2000
 
 # Verify we're on Exercises screen
 - runFlow:
@@ -98,16 +91,15 @@ appId: host.exp.Exponent
           text: "(Exercises|All Exercises|No exercises)"
 
 # Back to Home tab
-- waitForAnimationToEnd:
-    timeout: 2000
+- wait: 2000
 
 - runFlow:
     when:
       visible: "Home"
     commands:
       - tapOn: "Home"
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - waitForAnimationToEnd
+      - wait: 2000
 
 # Verify we're back on home
 - assertVisible:

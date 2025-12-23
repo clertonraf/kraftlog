@@ -1,8 +1,6 @@
 appId: host.exp.Exponent
 ---
 - launchApp
-- clearState
-- waitForAnimationToEnd
+- openLink: exp://192.168.0.104:8081
+- wait: 10000
 - takeScreenshot: debug-initial-screen.png
-- assertVisible: 
-    text: ".*"
