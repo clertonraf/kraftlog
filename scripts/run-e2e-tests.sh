@@ -5,10 +5,13 @@
 echo "🧪 KraftLog E2E Test Runner"
 echo ""
 
+# Add Maestro to PATH if not already there
+export PATH="$PATH:$HOME/.maestro/bin"
+
 # Check if Maestro is installed
 if ! command -v maestro &> /dev/null; then
-    echo "❌ Maestro is not installed or not in PATH"
-    echo "Please run: export PATH=\"\$PATH\":\"\$HOME/.maestro/bin\""
+    echo "❌ Maestro is not installed"
+    echo "Please install it with: curl -Ls \"https://get.maestro.mobile.dev\" | bash"
     exit 1
 fi
 
