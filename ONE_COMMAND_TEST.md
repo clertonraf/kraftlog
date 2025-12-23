@@ -2,31 +2,42 @@
 
 ## Quick Start
 
-### First Time Setup (One Time Only)
+### Simple 2-Step Process
 
+**Step 1: Install App (One Time)**
 ```bash
-# Terminal 1: Start Expo
 npx expo start
+```
+Wait for "Metro waiting on..." then press `i`
 
-# Wait for it to show "Metro waiting on..."
-# Then press 'i' to install in simulator
+**Step 2: Run Tests (Anytime)**
+```bash
+npm run test:e2e:smoke
 ```
 
-### Run Tests
+That's it! Keep Expo running and run tests whenever you want.
 
-After the app is installed once, you can run tests anytime with:
+## What `npm run test:e2e:smoke` Does
+
+Runs 2 critical test flows:
+1. ✅ Login and navigation
+2. ✅ Tab switching
+
+**Prerequisites:** App must be installed (see Quick Start above)
+
+## Alternative: `npm test` (Experimental)
 
 ```bash
 npm test
 ```
 
-## What `npm test` Does
+This tries to:
+1. ✅ Start backend automatically
+2. ⚠️ Start Expo in background (works but slower)
+3. ⚠️ Install app automatically (unreliable, needs manual 'i' press)
+4. ✅ Run tests
 
-1. ✅ Checks backend (starts if needed)
-2. ✅ Checks Expo (starts in background if needed)
-3. ✅ Checks iOS Simulator (boots if needed)
-4. ✅ Checks app installation
-5. ✅ Runs smoke tests (2 critical flows)
+**Recommended:** Use the 2-step process above instead for reliability.
 
 ## Recommended Workflow
 
