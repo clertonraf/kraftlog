@@ -1,8 +1,36 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api';
+// For iOS Simulator, use localhost
+// For Android Emulator, use 10.0.2.2 (Android's special alias for host machine)
+// For physical devices, use the actual IP or environment variable
+const getApiUrl = () => {
+  // Check environment variable first
+  const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    return envUrl;
+  }
+  
+  // Default URLs for development
+  if (Platform.OS === 'ios') {
+    return 'http://localhost:8080/api';
+  } else if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:8080/api';
+  }
+  
+  return 'http://localhost:8080/api';
+};
+
+const API_URL = getApiUrl();
+
+console.log('API Configuration:', {
+  platform: Platform.OS,
+  apiUrl: API_URL,
+  env: process.env.EXPO_PUBLIC_API_URL
+});
 
 const api = axios.create({
   baseURL: API_URL,
