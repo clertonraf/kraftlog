@@ -15,9 +15,18 @@ if ! command -v maestro &> /dev/null; then
     exit 1
 fi
 
-# Function to reset iOS simulator
+# Function to check if app is installed
+check_app_installed() {
+    SIMULATOR_UDID=$(xcrun simctl list devices | grep "Booted" | grep -o '\([A-F0-9-]\{36\}\)' | head -1)
+    if [ -z "$SIMULATOR_UDID" ]; then
+        return 1
+    fi
+    xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "org.reactjs.native.example.kraftlog"
+}
+
+# Function to reset iOS simulator (only if needed)
 reset_simulator() {
-    echo "🔄 Resetting iOS Simulator..."
+    echo "🔄 Checking simulator..."
     
     # Get the booted simulator UDID
     SIMULATOR_UDID=$(xcrun simctl list devices | grep "Booted" | grep -o '\([A-F0-9-]\{36\}\)' | head -1)
@@ -30,20 +39,20 @@ reset_simulator() {
         sleep 5
     fi
     
-    # Kill the app completely to force reload
-    echo "📱 Killing app to force reload..."
-    xcrun simctl terminate "$SIMULATOR_UDID" org.reactjs.native.example.kraftlog 2>/dev/null || true
-    killall "Expo Go" 2>/dev/null || true
-    
-    # Clear app data using simctl privacy
-    echo "🗑️  Clearing app data..."
-    xcrun simctl privacy "$SIMULATOR_UDID" reset all org.reactjs.native.example.kraftlog 2>/dev/null || true
-    
-    # Wait a moment for cleanup
-    sleep 2
-    
-    echo "✅ Simulator reset complete"
-    echo ""
+    # Check if app is installed
+    if check_app_installed; then
+        echo "✅ App is installed, ready to test"
+        echo ""
+    else
+        echo "⚠️  App not installed!"
+        echo ""
+        echo "Please install the app first:"
+        echo "1. In your Expo terminal, press 'i'"
+        echo "2. Wait for app to install on simulator"
+        echo "3. Then run tests again"
+        echo ""
+        exit 1
+    fi
 }
 
 # Check if backend is running
@@ -73,7 +82,7 @@ else
     echo ""
 fi
 
-# Reset simulator before running tests
+# Check simulator and app before running tests
 reset_simulator
 
 # Parse arguments
