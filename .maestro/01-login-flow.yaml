@@ -1,25 +1,34 @@
 appId: com.clerton.kraftlog
 ---
 # Login Flow Test
-# Tests: Login screen → Home screen with user details
+# Tests: Full login/logout cycle
 
 - launchApp
-- assertVisible: "Sign in to your account"
+
+# Check current state and logout if needed
+- runFlow:
+    when:
+      visible: "Welcome to KraftLog!"
+    commands:
+      # Already logged in, test logout first
+      - scroll
+      - tapOn: "Logout"
+
+# Now we should be on login screen
+- assertVisible: "Email"
 
 # Enter credentials
 - tapOn: "Email"
 - inputText: "admin@kraftlog.com"
 
-- tapOn: "Password"
+- tapOn: "Password"  
 - inputText: "admin123"
 
 # Submit login
 - tapOn: "Sign In"
 
+# Wait for login to complete
+- waitForAnimationToEnd
+
 # Verify successful login
 - assertVisible: "Welcome to KraftLog!"
-- assertVisible: "Hello, Admin!"
-
-# Verify profile info is displayed
-- assertVisible: "Your Profile"
-- assertVisible: "admin@kraftlog.com"

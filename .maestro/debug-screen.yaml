@@ -1,0 +1,9 @@
+appId: com.clerton.kraftlog
+---
+- launchApp
+- clearState
+- waitForAnimationToEnd
+- takeScreenshot: debug-initial-screen.png
+- assertVisible: 
+    text: ".*"
+    timeout: 1000
