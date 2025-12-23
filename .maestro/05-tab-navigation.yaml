@@ -42,26 +42,66 @@ appId: host.exp.Exponent
 - waitForAnimationToEnd:
     timeout: 3000
 
-# Verify Home tab - check for any of these texts
+# Verify we're on Home tab - check for "Your Profile" which is always visible
+- assertVisible: "Your Profile"
+
+# Navigate to Routines tab - tap on bottom tab bar
+# Try multiple ways to tap the Routines tab
 - runFlow:
     when:
-      visible: "Welcome to KraftLog!"
+      visible: "Routines"
     commands:
-      - assertVisible: "Welcome to KraftLog!"
-
-# Alternative: check if we're logged in by looking for user info
+      - tapOn: "Routines"
+      
 - runFlow:
     when:
-      notVisible: "Welcome to KraftLog!"
+      notVisible: "Routines"
     commands:
-      - assertVisible:
-          text: ".*"
+      # Tap on the second tab (middle of screen, near bottom)
+      - tapOn:
+          point: "50%,95%"
 
-# Navigate to Routines tab
-- tapOn: "Routines"
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify we're on Routines screen
 - assertVisible: "My Routines"
 
+# Navigate to Exercises tab
+- runFlow:
+    when:
+      visible: "Exercises"
+    commands:
+      - tapOn: "Exercises"
+      
+- runFlow:
+    when:
+      notVisible: "Exercises"  
+    commands:
+      # Tap on the third tab (right side, near bottom)
+      - tapOn:
+          point: "75%,95%"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify we're on Exercises screen  
+- assertVisible: "Exercise Library"
+
 # Back to Home tab
-- tapOn: "Home"
+- runFlow:
+    when:
+      visible: "Home"
+    commands:
+      - tapOn: "Home"
+      
+- runFlow:
+    when:
+      notVisible: "Home"
+    commands:
+      # Tap on first tab (left side, near bottom)
+      - tapOn:
+          point: "25%,95%"
+
 - waitForAnimationToEnd
+- assertVisible: "Your Profile"
