@@ -15,6 +15,33 @@ if ! command -v maestro &> /dev/null; then
     exit 1
 fi
 
+# Function to reset iOS simulator
+reset_simulator() {
+    echo "🔄 Resetting iOS Simulator..."
+    
+    # Get the booted simulator UDID
+    SIMULATOR_UDID=$(xcrun simctl list devices | grep "Booted" | grep -o '\([A-F0-9-]\{36\}\)' | head -1)
+    
+    if [ -z "$SIMULATOR_UDID" ]; then
+        echo "⚠️  No booted simulator found. Booting iPhone 17 Pro..."
+        # Boot iPhone 17 Pro (or latest available)
+        SIMULATOR_UDID=$(xcrun simctl list devices | grep "iPhone" | tail -1 | grep -o '\([A-F0-9-]\{36\}\)')
+        xcrun simctl boot "$SIMULATOR_UDID" 2>/dev/null
+        sleep 5
+    fi
+    
+    # Terminate the app if running
+    echo "📱 Terminating app..."
+    xcrun simctl terminate "$SIMULATOR_UDID" com.clerton.kraftlog 2>/dev/null || true
+    
+    # Clear app data using simctl privacy
+    echo "🗑️  Clearing app data..."
+    xcrun simctl privacy "$SIMULATOR_UDID" reset all com.clerton.kraftlog 2>/dev/null || true
+    
+    echo "✅ Simulator reset complete"
+    echo ""
+}
+
 # Check if backend is running
 if ! curl -f http://localhost:8080/actuator/health &> /dev/null; then
     echo "⚠️  Backend API is not running"
@@ -26,6 +53,9 @@ if ! curl -f http://localhost:8080/actuator/health &> /dev/null; then
         exit 1
     fi
 fi
+
+# Reset simulator before running tests
+reset_simulator
 
 # Parse arguments
 TEST_TYPE="${1:-all}"

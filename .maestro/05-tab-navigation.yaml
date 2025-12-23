@@ -3,19 +3,23 @@ appId: com.clerton.kraftlog
 # Tab Navigation Test
 # Tests: Navigate through bottom tabs
 
-- launchApp
+- launchApp:
+    clearState: true
+    stopApp: true
 
-# Ensure logged in
-- runFlow:
-    when:
-      visible: "Email"
-    commands:
-      - tapOn: "Email"
-      - inputText: "admin@kraftlog.com"
-      - tapOn: "Password"
-      - inputText: "admin123"
-      - tapOn: "Sign In"
-      - waitForAnimationToEnd
+# Wait for fresh start
+- waitForAnimationToEnd
+
+# Should be on login screen
+- assertVisible: "Email"
+
+# Login
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+- waitForAnimationToEnd
 
 # Verify Home tab
 - assertVisible: "Welcome to KraftLog!"
