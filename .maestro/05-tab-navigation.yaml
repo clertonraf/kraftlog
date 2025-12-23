@@ -8,6 +8,15 @@ appId: org.reactjs.native.example.kraftlog
 # Wait for app load
 - waitForAnimationToEnd
 
+# If we see a Retry button (network error), tap it
+- runFlow:
+    when:
+      visible: "Retry"
+    commands:
+      - tapOn: "Retry"
+      - waitForAnimationToEnd
+      - waitForAnimationToEnd
+
 # Login if needed
 - runFlow:
     when:

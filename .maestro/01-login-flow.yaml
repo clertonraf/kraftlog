@@ -1,12 +1,20 @@
 appId: org.reactjs.native.example.kraftlog
 ---
-# Simple App Launch Test
-# Tests: Verify app launches and shows some content
+# Login and Navigation Test
+# Tests: App launches and can handle different states
 
 - launchApp
 - waitForAnimationToEnd
-- waitForAnimationToEnd
 
-# Check if anything is visible (either login or home screen)
+# If we see a Retry button (network error), tap it
+- runFlow:
+    when:
+      visible: "Retry"
+    commands:
+      - tapOn: "Retry"
+      - waitForAnimationToEnd
+      - waitForAnimationToEnd
+
+# Check if anything is visible
 - assertVisible:
     text: ".*"
