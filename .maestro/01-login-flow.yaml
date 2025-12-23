@@ -1,10 +1,17 @@
-appId: org.reactjs.native.example.kraftlog
+appId: host.exp.Exponent
 ---
 # Login and Navigation Test
-# Tests: App launches and can handle different states
+# Tests: App launches in Expo Go and can handle different states
 
 - launchApp
 - waitForAnimationToEnd
+
+# Open the KraftLog app via deep link
+- openLink: exp://192.168.0.104:8081
+- waitForAnimationToEnd:
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000
 
 # If we see a Retry button (network error), tap it
 - runFlow:

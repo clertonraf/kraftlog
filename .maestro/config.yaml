@@ -2,7 +2,8 @@
 # Global configuration for all Maestro tests
 
 # App configuration
-appId: org.reactjs.native.example.kraftlog
+# Use Expo Go for development testing
+appId: host.exp.Exponent
 
 # Default delays
 defaults:

@@ -21,7 +21,8 @@ check_app_installed() {
     if [ -z "$SIMULATOR_UDID" ]; then
         return 1
     fi
-    xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "org.reactjs.native.example.kraftlog"
+    # Check for Expo Go (used in development)
+    xcrun simctl listapps "$SIMULATOR_UDID" 2>/dev/null | grep -q "host.exp.Exponent"
 }
 
 # Function to reset iOS simulator (only if needed)
@@ -41,14 +42,14 @@ reset_simulator() {
     
     # Check if app is installed
     if check_app_installed; then
-        echo "✅ App is installed, ready to test"
+        echo "✅ Expo Go is installed, ready to test"
         echo ""
     else
-        echo "⚠️  App not installed!"
+        echo "⚠️  Expo Go not installed!"
         echo ""
-        echo "Please install the app first:"
+        echo "Please install Expo Go first:"
         echo "1. In your Expo terminal, press 'i'"
-        echo "2. Wait for app to install on simulator"
+        echo "2. Wait for Expo Go to install and open"
         echo "3. Then run tests again"
         echo ""
         exit 1
