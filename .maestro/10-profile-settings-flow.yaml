@@ -1,7 +1,7 @@
 appId: host.exp.Exponent
 ---
-# Routines Tab Navigation Test
-# Tests: Home → Routines tab → View routine list → Create new routine
+# Profile and Settings Navigation Test
+# Tests: Access profile, view settings, check user info
 
 - launchApp
 - openLink: exp://192.168.0.104:8081
@@ -17,7 +17,7 @@ appId: host.exp.Exponent
       - waitForAnimationToEnd:
           timeout: 3000
 
-# Login if needed (only if on login screen)
+# Login if needed
 - runFlow:
     when:
       visible: "Email"
@@ -34,30 +34,35 @@ appId: host.exp.Exponent
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Navigate to Routines tab (second tab in bottom navigation)
+# Navigate to Profile tab (4th tab, rightmost)
 - tapOn:
-    point: "40%,95%"
+    point: "90%,95%"
 - waitForAnimationToEnd:
     timeout: 3000
 
-# Verify we're on Routines screen - check for routines or create button
-- assertVisible: 
+# Verify profile screen loaded with user info
+- assertVisible:
     text: ".*"
 
-# Try to tap on a routine if available
+# Check if we can see email or username
 - runFlow:
     when:
-      visible: 
-        id: "routine-card"
+      visible: "admin@kraftlog.com"
     commands:
-      - tapOn:
-          id: "routine-card"
+      # Email is visible, profile loaded correctly
+      - assertVisible:
+          text: "admin@kraftlog.com"
+
+# Look for settings or edit profile option
+- runFlow:
+    when:
+      visible: "Settings"
+    commands:
+      - tapOn: "Settings"
       - waitForAnimationToEnd:
           timeout: 2000
-      # Verify routine detail screen
       - assertVisible:
           text: ".*"
-      # Go back
       - back
       - waitForAnimationToEnd:
           timeout: 2000

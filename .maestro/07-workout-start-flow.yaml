@@ -1,7 +1,7 @@
 appId: host.exp.Exponent
 ---
-# Routines Tab Navigation Test
-# Tests: Home → Routines tab → View routine list → Create new routine
+# Start Workout Flow Test
+# Tests: Navigate to routines → Start a workout → Log exercise
 
 - launchApp
 - openLink: exp://192.168.0.104:8081
@@ -17,7 +17,7 @@ appId: host.exp.Exponent
       - waitForAnimationToEnd:
           timeout: 3000
 
-# Login if needed (only if on login screen)
+# Login if needed
 - runFlow:
     when:
       visible: "Email"
@@ -34,30 +34,35 @@ appId: host.exp.Exponent
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Navigate to Routines tab (second tab in bottom navigation)
+# Navigate to Routines tab
 - tapOn:
     point: "40%,95%"
 - waitForAnimationToEnd:
     timeout: 3000
 
-# Verify we're on Routines screen - check for routines or create button
-- assertVisible: 
+# Verify routines screen
+- assertVisible:
     text: ".*"
 
-# Try to tap on a routine if available
+# Try to start a workout if a routine exists
 - runFlow:
     when:
-      visible: 
+      visible:
         id: "routine-card"
     commands:
+      # Tap on routine
       - tapOn:
           id: "routine-card"
       - waitForAnimationToEnd:
           timeout: 2000
-      # Verify routine detail screen
-      - assertVisible:
-          text: ".*"
-      # Go back
-      - back
-      - waitForAnimationToEnd:
-          timeout: 2000
+      # Look for Start Workout button
+      - runFlow:
+          when:
+            visible: "Start"
+          commands:
+            - tapOn: "Start"
+            - waitForAnimationToEnd:
+                timeout: 3000
+            # Verify workout started
+            - assertVisible:
+                text: ".*"

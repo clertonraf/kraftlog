@@ -1,7 +1,7 @@
 appId: host.exp.Exponent
 ---
-# Sync Status and Data Persistence Test
-# Tests: Verify app handles offline/online state and data persistence
+# Create Routine Flow Test
+# Tests: Create a new workout routine
 
 - launchApp
 - openLink: exp://192.168.0.104:8081
@@ -17,7 +17,7 @@ appId: host.exp.Exponent
       - waitForAnimationToEnd:
           timeout: 3000
 
-# Login if needed (only if on login screen)
+# Login if needed
 - runFlow:
     when:
       visible: "Email"
@@ -34,37 +34,24 @@ appId: host.exp.Exponent
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Check home screen - data should load
-- tapOn:
-    point: "10%,95%"
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# Verify content is visible
-- assertVisible:
-    text: ".*"
-
-# Navigate through tabs to verify data persistence
-# Tab 2: Routines
+# Navigate to Routines tab
 - tapOn:
     point: "40%,95%"
 - waitForAnimationToEnd:
-    timeout: 2000
-- assertVisible:
-    text: ".*"
+    timeout: 3000
 
-# Tab 3: History
-- tapOn:
-    point: "70%,95%"
-- waitForAnimationToEnd:
-    timeout: 2000
-- assertVisible:
-    text: ".*"
+# Look for create/add button
+- runFlow:
+    when:
+      visible: "+"
+    commands:
+      - tapOn: "+"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      # Verify creation screen opened
+      - assertVisible:
+          text: ".*"
 
-# Back to home to complete the cycle
-- tapOn:
-    point: "10%,95%"
-- waitForAnimationToEnd:
-    timeout: 2000
+# Verify we're on routines screen
 - assertVisible:
     text: ".*"

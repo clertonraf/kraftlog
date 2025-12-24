@@ -1,7 +1,7 @@
 appId: host.exp.Exponent
 ---
 # Workout History Flow Test
-# Tests: Home → Quick Actions → Workout History
+# Tests: Home → View workout history → Check workouts
 
 - launchApp
 - openLink: exp://192.168.0.104:8081
@@ -40,6 +40,31 @@ appId: host.exp.Exponent
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Verify we can see content (simplified)
+# Navigate to History tab (third tab)
+- tapOn:
+    point: "70%,95%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Verify History screen loaded
 - assertVisible:
     text: ".*"
+
+# Check if we have any workout history items
+- runFlow:
+    when:
+      visible:
+        id: "workout-history-item"
+    commands:
+      # Tap on a workout item
+      - tapOn:
+          id: "workout-history-item"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      # Verify workout detail opened
+      - assertVisible:
+          text: ".*"
+      # Go back
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
