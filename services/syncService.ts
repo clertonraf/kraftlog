@@ -93,7 +93,8 @@ class SyncService {
   private async checkOnlineStatus(): Promise<boolean> {
     try {
       // Use a simple endpoint to check connectivity
-      await api.get('/exercises', { timeout: 3000, params: { limit: 1 } });
+      // Try to get exercises list with a short timeout
+      await api.get('/exercises', { timeout: 3000 });
       return true;
     } catch (error) {
       return false;
@@ -298,11 +299,15 @@ class SyncService {
     const db = await getDatabase();
     for (const exercise of exercises) {
       const now = new Date().toISOString();
+      // Use createdAt/updatedAt from API if available, otherwise use current timestamp
+      const createdAt = exercise.createdAt || now;
+      const updatedAt = exercise.updatedAt || now;
+      
       await db.runAsync(
         `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, 1)`,
         [exercise.id, exercise.name, exercise.description || null, exercise.videoUrl || null,
-         now, now]
+         createdAt, updatedAt]
       );
     }
   }
