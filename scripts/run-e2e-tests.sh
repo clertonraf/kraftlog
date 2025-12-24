@@ -56,8 +56,8 @@ reset_simulator() {
     fi
 }
 
-# Check if backend is running
-if ! curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' &> /dev/null; then
+# Check if backend is running - use actuator health endpoint or a simple GET request
+if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/exercises | grep -q "200\|403"; then
     echo "⚠️  Backend API is not responding"
     echo ""
     echo "Starting backend with Docker Compose..."
@@ -65,7 +65,7 @@ if ! curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: appl
     echo "⏳ Waiting for backend to start..."
     sleep 15
     
-    if ! curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' &> /dev/null; then
+    if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/exercises | grep -q "200\|403"; then
         echo "⚠️  Backend still not responding"
         echo "Please start it manually with: ./scripts/start-backend.sh"
         echo ""
