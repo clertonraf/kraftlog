@@ -3,13 +3,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { routineService, RoutineResponse } from '@/services/routineService';
+import { routineImportService } from '@/services/routineImportService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function RoutinesScreen() {
   const [routines, setRoutines] = useState<RoutineResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [importing, setImporting] = useState(false);
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -108,6 +111,58 @@ export default function RoutinesScreen() {
     }
   };
 
+  const handleImportRoutine = async () => {
+    if (!user?.id) return;
+
+    try {
+      setImporting(true);
+      
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        setImporting(false);
+        return;
+      }
+
+      const asset = result.assets[0];
+      
+      // Fetch the file as blob
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      
+      // Import the routine
+      const importResult = await routineImportService.importRoutineFromXlsx(blob, user.id);
+
+      setImporting(false);
+
+      if (importResult.success) {
+        const result = importResult.result!;
+        const message = `Import completed!\n\nWorkouts: ${result.successfulWorkouts}/${result.totalWorkouts} successful\nExercises: ${result.successfulExercises}/${result.totalExercises} successful${result.errors.length > 0 ? '\n\nSome errors occurred during import.' : ''}`;
+        
+        if (Platform.OS === 'web') {
+          alert(message);
+        } else {
+          Alert.alert('Import Successful', message);
+        }
+        
+        loadRoutines();
+      } else {
+        throw new Error(importResult.error || 'Import failed');
+      }
+    } catch (error: any) {
+      setImporting(false);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to import routine';
+      if (Platform.OS === 'web') {
+        alert(`Error: ${errorMsg}`);
+      } else {
+        Alert.alert('Import Error', errorMsg);
+      }
+    }
+  };
+
   const renderRoutine = ({ item }: { item: RoutineResponse }) => (
     <TouchableOpacity 
       style={[styles.routineCard, item.isActive && styles.activeRoutine]}
@@ -184,6 +239,20 @@ export default function RoutinesScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Routines</Text>
+        <TouchableOpacity
+          style={styles.importButton}
+          onPress={handleImportRoutine}
+          disabled={importing}
+        >
+          {importing ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : (
+            <>
+              <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
+              <Text style={styles.importButtonText}>Import</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -228,11 +297,28 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 34,
     fontWeight: 'bold',
     color: '#000',
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F2F2F7',
+  },
+  importButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   listContainer: {
     padding: 16,
