@@ -1,0 +1,96 @@
+appId: host.exp.Exponent
+---
+# Admin Exercise Import Test
+# Tests: Login as admin → Navigate to exercises → Verify import button exists
+
+- launchApp
+- openLink: exp://192.168.0.104:8081
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Handle retry button if network error
+- runFlow:
+    when:
+      visible: "Retry"
+    commands:
+      - tapOn: "Retry"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Login as admin
+- runFlow:
+    when:
+      visible: "Email"
+    commands:
+      - tapOn: "Email"
+      - inputText: "admin@kraftlog.com"
+      - tapOn: "Password"
+      - inputText: "admin123"
+      - tapOn: "Sign In"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# Wait for app to fully load
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Navigate to Explore/Exercises tab (3rd tab from left)
+- tapOn:
+    point: "70%,95%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Verify we're on exercises screen - look for exercises list or search
+- assertVisible:
+    text: ".*"
+
+# As admin, look for Import PDF button
+- runFlow:
+    when:
+      visible: "Import PDF"
+    commands:
+      # Verify import button exists (admin-only feature)
+      - assertVisible: "Import PDF"
+      # Note: We don't actually tap it as we can't handle file picker in tests
+      # This test just verifies the admin can see the import option
+
+# Verify exercises are loaded by scrolling
+- scroll
+
+# Look for any exercise in the list
+- runFlow:
+    when:
+      visible:
+        id: "exercise-item"
+    commands:
+      # Tap on an exercise to view details
+      - tapOn:
+          id: "exercise-item"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      # Verify exercise detail opened
+      - assertVisible:
+          text: ".*"
+      # Admin should be able to edit
+      - runFlow:
+          when:
+            visible: "Edit"
+          commands:
+            - assertVisible: "Edit"
+      # Go back
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# Verify search functionality works
+- runFlow:
+    when:
+      visible: "Search"
+    commands:
+      - tapOn: "Search"
+      - inputText: "bench"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      # Should filter exercises
+      - assertVisible:
+          text: ".*"

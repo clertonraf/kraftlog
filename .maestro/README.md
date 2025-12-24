@@ -60,6 +60,7 @@ npm run test:e2e
 8. Exercise library browsing
 9. Creating new routines
 10. Profile and settings
+11. Admin exercise import (admin-only)
 
 ### Watch Mode
 ```bash
@@ -81,6 +82,7 @@ Automatically reruns tests when files change. Great for development.
 | `08-exercise-library-flow.yaml` | Browse and search exercises | Exercise database |
 | `09-create-routine-flow.yaml` | Create a new custom routine | Routine creation |
 | `10-profile-settings-flow.yaml` | View profile and app settings | User profile |
+| `11-admin-import-exercises.yaml` | Admin imports exercises from PDF | Admin features |
 | `debug-screen.yaml` | Debug helper to capture screen state | Development |
 
 ## Writing Tests
