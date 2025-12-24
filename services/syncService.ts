@@ -92,7 +92,8 @@ class SyncService {
 
   private async checkOnlineStatus(): Promise<boolean> {
     try {
-      await api.get('/health', { timeout: 3000 });
+      // Use a simple endpoint to check connectivity
+      await api.get('/exercises', { timeout: 3000, params: { limit: 1 } });
       return true;
     } catch (error) {
       return false;
@@ -296,11 +297,12 @@ class SyncService {
   private async saveExercisesToLocal(exercises: any[]) {
     const db = await getDatabase();
     for (const exercise of exercises) {
+      const now = new Date().toISOString();
       await db.runAsync(
         `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [exercise.id, exercise.name, exercise.description, exercise.videoUrl,
-         exercise.createdAt, exercise.updatedAt]
+        [exercise.id, exercise.name, exercise.description || null, exercise.videoUrl || null,
+         now, now]
       );
     }
   }
