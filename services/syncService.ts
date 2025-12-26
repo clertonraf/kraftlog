@@ -108,26 +108,20 @@ class SyncService {
 
   private async checkOnlineStatus(): Promise<boolean> {
     try {
-      // Use a simple endpoint to check connectivity - try actuator health first
-      const response = await api.get('/actuator/health', { 
+      // Use exercises endpoint to check connectivity (lightweight and always available)
+      await api.get('/exercises', { 
         timeout: 3000,
         validateStatus: (status) => status < 500 // Accept anything under 500
       });
       return true;
     } catch (error: any) {
-      // If actuator health fails, try exercises endpoint as fallback
-      try {
-        await api.get('/exercises', { timeout: 3000 });
-        return true;
-      } catch (fallbackError: any) {
-        // Consider device offline only on network errors, not API errors
-        if (fallbackError.code === 'ECONNABORTED' || fallbackError.code === 'ERR_NETWORK' || !fallbackError.response) {
-          console.log('Device is offline, skipping sync');
-          return false;
-        }
-        // If we got a response (even an error), we're online
-        return true;
+      // Consider device offline only on network errors, not API errors
+      if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || !error.response) {
+        console.log('Device is offline, skipping sync');
+        return false;
       }
+      // If we got a response (even an error), we're online
+      return true;
     }
   }
 
