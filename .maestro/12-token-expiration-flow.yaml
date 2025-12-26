@@ -1,0 +1,52 @@
+appId: host.exp.Exponent
+---
+# Test: Token Expiration Handling
+# This test verifies that the app properly handles expired tokens and redirects to login
+
+- launchApp
+- waitForAnimationToEnd
+
+# Wait for app to load
+- runFlow:
+    when:
+      visible: "Retry"
+    commands:
+      - tapOn: "Retry"
+      - waitForAnimationToEnd
+
+# Login first
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+- waitForAnimationToEnd
+
+# Verify we're logged in
+- assertVisible: "Welcome to KraftLog!|Your Profile"
+
+# Simulate token expiration by clearing AsyncStorage
+# Note: This is a simplified test - in reality we'd wait for token to actually expire
+# or make a backend call with an expired token
+- evalScript: |
+    // Clear token to simulate expiration
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    await AsyncStorage.removeItem('token');
+
+# Try to access a protected resource (routines)
+- tapOn: "Routines"
+- waitForAnimationToEnd
+
+# Should be redirected to login screen due to 401/403 error
+- assertVisible: "Sign in to your account|Email"
+
+# Verify we can login again
+- tapOn: "Email"
+- inputText: "admin@kraftlog.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign In"
+- waitForAnimationToEnd
+
+# Should be back in the app
+- assertVisible: "Welcome to KraftLog!|Your Profile"
