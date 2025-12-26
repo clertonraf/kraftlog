@@ -26,6 +26,17 @@ class SyncService {
 
   async getSyncStatus(): Promise<SyncStatus> {
     const db = await getDatabase();
+    
+    // On web, database is not available
+    if (!db) {
+      const lastSync = await AsyncStorage.getItem('lastSync');
+      return {
+        lastSync,
+        isSyncing: this.isSyncing,
+        pendingChanges: 0,
+      };
+    }
+    
     const result = await db.getFirstAsync<{ count: number }>(
       'SELECT COUNT(*) as count FROM sync_queue'
     );
@@ -40,6 +51,11 @@ class SyncService {
 
   async addToSyncQueue(entityType: string, entityId: string, operation: string, data: any) {
     const db = await getDatabase();
+    if (!db) {
+      console.warn('Database not available on web platform');
+      return;
+    }
+    
     await db.runAsync(
       `INSERT INTO sync_queue (entity_type, entity_id, operation, data, created_at)
        VALUES (?, ?, ?, ?, ?)`,
@@ -96,8 +112,14 @@ class SyncService {
       // Try to get exercises list with a short timeout
       await api.get('/exercises', { timeout: 3000 });
       return true;
-    } catch (error) {
-      return false;
+    } catch (error: any) {
+      // Consider device offline only on network errors, not API errors
+      if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || !error.response) {
+        console.log('Device is offline, skipping sync');
+        return false;
+      }
+      // If we got a response (even an error), we're online
+      return true;
     }
   }
 
@@ -109,6 +131,8 @@ class SyncService {
 
   private async processSyncQueue() {
     const db = await getDatabase();
+    if (!db) return; // Skip on web
+    
     const queue = await db.getAllAsync<{
       id: number;
       entity_type: string;
@@ -211,6 +235,8 @@ class SyncService {
 
   private async saveRoutinesToLocal(routines: any[]) {
     const db = await getDatabase();
+    if (!db) return; // Skip on web
+    
     for (const routine of routines) {
       await db.runAsync(
         `INSERT OR REPLACE INTO routines (id, user_id, name, description, created_at, updated_at, synced)
@@ -247,6 +273,8 @@ class SyncService {
 
   private async saveLogRoutinesToLocal(logRoutines: any[]) {
     const db = await getDatabase();
+    if (!db) return; // Skip on web
+    
     for (const logRoutine of logRoutines) {
       await db.runAsync(
         `INSERT OR REPLACE INTO log_routines (id, routine_id, user_id, start_datetime, end_datetime, created_at, updated_at, synced)
@@ -297,17 +325,23 @@ class SyncService {
 
   private async saveExercisesToLocal(exercises: any[]) {
     const db = await getDatabase();
+    if (!db) return; // Skip on web
+    
+    const now = new Date().toISOString();
+    
     for (const exercise of exercises) {
-      const now = new Date().toISOString();
-      // Use createdAt/updatedAt from API if available, otherwise use current timestamp
-      const createdAt = exercise.createdAt || now;
-      const updatedAt = exercise.updatedAt || now;
-      
+      // Always use current timestamp as backend doesn't provide these fields
       await db.runAsync(
         `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [exercise.id, exercise.name, exercise.description || null, exercise.videoUrl || null,
-         createdAt, updatedAt]
+        [
+          exercise.id, 
+          exercise.name, 
+          exercise.description || null, 
+          exercise.videoUrl || null,
+          now,
+          now
+        ]
       );
     }
   }

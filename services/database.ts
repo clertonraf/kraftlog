@@ -1,8 +1,16 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
 export const initDatabase = async () => {
+  // SQLite is not fully supported on web - use in-memory fallback or skip
+  if (Platform.OS === 'web') {
+    console.warn('SQLite is not available on web platform');
+    // Return a dummy db object for web
+    return null;
+  }
+  
   if (db) return db;
   
   db = await SQLite.openDatabaseAsync('kraftlog.db');
@@ -161,6 +169,10 @@ export const initDatabase = async () => {
 };
 
 export const getDatabase = async () => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
+  
   if (!db) {
     return await initDatabase();
   }
@@ -168,7 +180,7 @@ export const getDatabase = async () => {
 };
 
 export const closeDatabase = async () => {
-  if (db) {
+  if (db && Platform.OS !== 'web') {
     await db.closeAsync();
     db = null;
   }
