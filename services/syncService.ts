@@ -332,7 +332,10 @@ class SyncService {
     const now = new Date().toISOString();
     
     for (const exercise of exercises) {
-      // Always use current timestamp as backend doesn't provide these fields
+      // Use backend timestamps if available, otherwise use current time
+      const createdAt = exercise.createdAt || now;
+      const updatedAt = exercise.updatedAt || now;
+      
       await db.runAsync(
         `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, 1)`,
@@ -341,8 +344,8 @@ class SyncService {
           exercise.name, 
           exercise.description || null, 
           exercise.videoUrl || null,
-          now,
-          now
+          createdAt,
+          updatedAt
         ]
       );
     }
