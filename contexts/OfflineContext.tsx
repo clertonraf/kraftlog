@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import { initDatabase } from '@/services/database';
 import { syncService, SyncStatus } from '@/services/syncService';
 import { useAuth } from './AuthContext';
@@ -22,7 +22,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Initialize database
+    // Initialize database (will be skipped on web)
     initDatabase()
       .then(() => {
         console.log('Database initialized');
@@ -30,17 +30,26 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         console.error('Failed to initialize database:', error);
+        // On web, database init returns null but shouldn't fail
+        if (Platform.OS === 'web') {
+          setIsInitialized(true);
+        }
       });
 
     // Subscribe to sync status updates
     const unsubscribe = syncService.subscribe(setSyncStatus);
 
-    // Setup app state listener for background sync
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    // Setup app state listener for background sync (skip on web)
+    let subscription: any = null;
+    if (Platform.OS !== 'web') {
+      subscription = AppState.addEventListener('change', handleAppStateChange);
+    }
 
     return () => {
       unsubscribe();
-      subscription.remove();
+      if (subscription) {
+        subscription.remove();
+      }
     };
   }, []);
 
@@ -56,8 +65,13 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     
     try {
       console.log('Performing initial sync...');
-      await syncService.pullFromServer(user.id);
-      await syncService.syncAll();
+      // On web, only pull from server (no local database sync)
+      if (Platform.OS === 'web') {
+        console.log('Web platform - skipping local database sync');
+      } else {
+        await syncService.pullFromServer(user.id);
+        await syncService.syncAll();
+      }
     } catch (error) {
       console.error('Initial sync failed:', error);
     }
