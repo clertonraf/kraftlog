@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService, UserResponse, LoginRequest, RegisterRequest } from '@/services/authService';
+import { setAuthErrorCallback } from '@/services/api';
+import { router } from 'expo-router';
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -19,6 +21,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkAuth();
+    
+    // Set up global auth error handler
+    setAuthErrorCallback(() => {
+      console.log('Auth error detected - logging out');
+      setUser(null);
+      // Navigate to login screen
+      try {
+        router.replace('/login');
+      } catch (error) {
+        console.error('Failed to navigate to login:', error);
+      }
+    });
   }, []);
 
   const checkAuth = async () => {

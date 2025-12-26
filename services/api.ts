@@ -39,6 +39,13 @@ const api = axios.create({
   },
 });
 
+// Auth error callback for global handling
+let onAuthError: (() => void) | null = null;
+
+export const setAuthErrorCallback = (callback: () => void) => {
+  onAuthError = callback;
+};
+
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('token');
@@ -60,11 +67,30 @@ api.interceptors.response.use(
     console.log('Response data:', response.data);
     return response;
   },
-  (error) => {
+  async (error) => {
     // Suppress logging for expected 404s on last workout endpoint
     if (error.response?.status === 404 && error.config?.url?.includes('/last')) {
       return Promise.reject(error);
     }
+    
+    // Handle expired token / unauthorized access
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn('Authentication failed - logging out user');
+      // Clear stored credentials
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      
+      // Trigger global auth error handler
+      if (onAuthError) {
+        onAuthError();
+      }
+      
+      // Reject with a specific error type for the UI to handle
+      const authError = new Error('Session expired. Please login again.');
+      (authError as any).isAuthError = true;
+      return Promise.reject(authError);
+    }
+    
     console.error('API Error:', error.response?.status, error.config?.url);
     console.error('Error data:', error.response?.data);
     return Promise.reject(error);

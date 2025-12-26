@@ -115,7 +115,8 @@ class SyncService {
         method: 'HEAD',
         signal: AbortSignal.timeout(3000)
       });
-      return response.ok || response.status === 401; // Consider online if we get any response
+      // Consider online if we get any response (including 401/403 which means server is up)
+      return response.ok || response.status === 401 || response.status === 403;
     } catch (error: any) {
       // Consider device offline only on network errors
       console.log('Device is offline, skipping sync');
