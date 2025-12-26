@@ -2,12 +2,12 @@
 
 ## Issues Identified and Fixed
 
-### 1. Import Service Authentication Issue ✅
-**Problem:** Import service was failing with error "email: Email is required" when trying to authenticate with KraftLog API.
+### 1. Import Service Authentication Issue ⚠️ NEEDS BACKEND CODE FIX
+**Problem:** Import service is failing with error "email: Email is required" when trying to authenticate with KraftLog API.
 
-**Root Cause:** The import service needed admin credentials (ADMIN_EMAIL and ADMIN_PASSWORD) to authenticate with the backend API, but these environment variables were not configured in docker-compose.yml.
+**Root Cause:** The import service needed admin credentials (ADMIN_EMAIL and ADMIN_PASSWORD) to authenticate with the backend API. Environment variables were added to docker-compose.yml and are correctly set in the container, BUT the KraftLogImport application code is not reading these environment variables.
 
-**Solution:** Added ADMIN_EMAIL and ADMIN_PASSWORD environment variables to the import-service configuration in docker-compose.yml:
+**Solution (Partial):** Added ADMIN_EMAIL and ADMIN_PASSWORD environment variables to the import-service configuration in docker-compose.yml:
 ```yaml
 import-service:
   environment:
@@ -17,7 +17,36 @@ import-service:
     ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
 ```
 
-**Status:** Fixed - Services restarted with new configuration
+**Required Backend Code Changes (KraftLogImport repository):**
+
+The `KraftLogApiClient.java` needs to be updated to read the ADMIN_EMAIL and ADMIN_PASSWORD from environment variables. Current code appears to have empty credentials.
+
+Update the authentication method to:
+```java
+@Value("${ADMIN_EMAIL:admin@kraftlog.com}")
+private String adminEmail;
+
+@Value("${ADMIN_PASSWORD:admin123}")
+private String adminPassword;
+
+public void authenticate() {
+    // Use adminEmail and adminPassword instead of empty strings
+    LoginRequest request = new LoginRequest(adminEmail, adminPassword);
+    // ... rest of authentication logic
+}
+```
+
+**Verification:**
+```bash
+# Environment variables are correctly set:
+$ docker exec kraftlog-import env | grep ADMIN
+ADMIN_EMAIL=admin@kraftlog.com
+ADMIN_PASSWORD=admin123
+
+# But authentication still fails because code doesn't use them
+```
+
+**Status:** Docker config fixed ✅ | Backend code needs update ⚠️
 
 ---
 
@@ -96,6 +125,56 @@ To test the routine import functionality:
 ---
 
 ## Remaining Notes
+
+### Required Changes in Backend Repositories
+
+#### KraftLogImport Repository
+File: `src/main/java/com/kraftlog/pdfimport/client/KraftLogApiClient.java`
+
+The authentication method needs to read credentials from environment variables:
+
+```java
+@Component
+public class KraftLogApiClient {
+    
+    @Value("${ADMIN_EMAIL:admin@kraftlog.com}")
+    private String adminEmail;
+    
+    @Value("${ADMIN_PASSWORD:admin123}")
+    private String adminPassword;
+    
+    @Value("${KRAFTLOG_API_URL:http://localhost:8080}")
+    private String apiUrl;
+    
+    // Update authenticate method to use these values
+    public String authenticate() throws IOException {
+        LoginRequest request = new LoginRequest();
+        request.setEmail(adminEmail);
+        request.setPassword(adminPassword);
+        
+        // ... rest of authentication logic
+    }
+}
+```
+
+**Why:** The application currently has hardcoded empty credentials or is not reading from environment variables properly.
+
+**Test after fix:**
+```bash
+# Rebuild import service image
+cd /path/to/KraftLogImport
+docker build -t kraftlog-import:latest .
+
+# Restart services
+cd /path/to/kraftlog
+docker-compose down
+docker-compose up -d
+
+# Test import
+./scripts/test-backend-services.sh
+```
+
+---
 
 ### Health Check Endpoints
 - Backend uses `/actuator/health` (Spring Boot Actuator)
