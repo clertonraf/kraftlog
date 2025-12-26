@@ -1,22 +1,23 @@
-import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
+import * as SQLite from 'expo-sqlite';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
 export const initDatabase = async () => {
   // SQLite is not fully supported on web - use in-memory fallback or skip
   if (Platform.OS === 'web') {
-    console.warn('SQLite is not available on web platform');
-    // Return a dummy db object for web
+    console.log('SQLite is not available on web platform - using API only mode');
+    // Return null for web - app will use API directly
     return null;
   }
   
   if (db) return db;
   
-  db = await SQLite.openDatabaseAsync('kraftlog.db');
+  try {
+    db = await SQLite.openDatabaseAsync('kraftlog.db');
   
-  await db.execAsync(`
-    PRAGMA journal_mode = WAL;
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
     
     -- Users table
     CREATE TABLE IF NOT EXISTS users (
@@ -165,7 +166,11 @@ export const initDatabase = async () => {
     CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id);
   `);
   
-  return db;
+    return db;
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    throw error;
+  }
 };
 
 export const getDatabase = async () => {

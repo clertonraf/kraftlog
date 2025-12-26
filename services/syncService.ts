@@ -109,19 +109,17 @@ class SyncService {
   private async checkOnlineStatus(): Promise<boolean> {
     try {
       // Use exercises endpoint to check connectivity (lightweight and always available)
-      await api.get('/exercises', { 
-        timeout: 3000,
-        validateStatus: (status) => status < 500 // Accept anything under 500
+      // Don't include auth token for this check
+      const testUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api';
+      const response = await fetch(`${testUrl}/exercises`, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(3000)
       });
-      return true;
+      return response.ok || response.status === 401; // Consider online if we get any response
     } catch (error: any) {
-      // Consider device offline only on network errors, not API errors
-      if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || !error.response) {
-        console.log('Device is offline, skipping sync');
-        return false;
-      }
-      // If we got a response (even an error), we're online
-      return true;
+      // Consider device offline only on network errors
+      console.log('Device is offline, skipping sync');
+      return false;
     }
   }
 
@@ -332,22 +330,27 @@ class SyncService {
     const now = new Date().toISOString();
     
     for (const exercise of exercises) {
-      // Use backend timestamps if available, otherwise use current time
-      const createdAt = exercise.createdAt || now;
-      const updatedAt = exercise.updatedAt || now;
-      
-      await db.runAsync(
-        `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
-         VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [
-          exercise.id, 
-          exercise.name, 
-          exercise.description || null, 
-          exercise.videoUrl || null,
-          createdAt,
-          updatedAt
-        ]
-      );
+      try {
+        // Ensure we always have valid timestamps
+        const createdAt = exercise.createdAt || exercise.created_at || now;
+        const updatedAt = exercise.updatedAt || exercise.updated_at || now;
+        
+        await db.runAsync(
+          `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
+           VALUES (?, ?, ?, ?, ?, ?, 1)`,
+          [
+            exercise.id, 
+            exercise.name, 
+            exercise.description || null, 
+            exercise.videoUrl || exercise.video_url || null,
+            createdAt,
+            updatedAt
+          ]
+        );
+      } catch (error) {
+        console.error(`Failed to save exercise ${exercise.id}:`, error);
+        // Continue with next exercise instead of failing entire sync
+      }
     }
   }
 }
