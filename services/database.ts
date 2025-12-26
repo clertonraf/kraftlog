@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
-import * as SQLite from 'expo-sqlite';
 
-let db: SQLite.SQLiteDatabase | null = null;
+let db: any | null = null;
+let SQLite: any = null;
 
 export const initDatabase = async () => {
   // SQLite is not fully supported on web - use in-memory fallback or skip
@@ -9,6 +9,11 @@ export const initDatabase = async () => {
     console.log('SQLite is not available on web platform - using API only mode');
     // Return null for web - app will use API directly
     return null;
+  }
+  
+  // Dynamically import SQLite only on native platforms
+  if (!SQLite) {
+    SQLite = await import('expo-sqlite');
   }
   
   if (db) return db;
