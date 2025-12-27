@@ -46,4 +46,4 @@ app-example
 
 # temporary files
 *.tmp
-/tmp
+/tmp.env
