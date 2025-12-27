@@ -41,7 +41,7 @@ sleep 15
 
 # Check health
 echo "🔍 Checking service health..."
-if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+if curl -f http://localhost:8080/api/health > /dev/null 2>&1; then
     echo "✅ Backend is running at http://localhost:8080"
     echo "✅ Import Service is running at http://localhost:8082"
     echo "✅ Database is running at localhost:5433"

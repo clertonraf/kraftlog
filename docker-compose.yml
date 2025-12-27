@@ -54,9 +54,9 @@ services:
     container_name: kraftlog-import
     environment:
       KRAFTLOG_API_URL: http://backend:8080
+      KRAFTLOG_API_USERNAME: ${ADMIN_EMAIL:-admin@kraftlog.com}
+      KRAFTLOG_API_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       SERVER_PORT: 8082
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@kraftlog.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
     ports:
       - "8082:8082"
     depends_on:

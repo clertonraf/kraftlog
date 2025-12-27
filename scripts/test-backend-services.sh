@@ -33,8 +33,8 @@ echo ""
 
 # Test backend API
 echo "2️⃣  Testing backend API..."
-if curl -s -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Backend API is responding (actuator/health)${NC}"
+if curl -s -f http://localhost:8080/api/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Backend API is responding (api/health)${NC}"
 elif curl -s http://localhost:8080/api/auth/login -X POST \
     -H "Content-Type: application/json" \
     -d '{"email":"test","password":"test"}' 2>&1 | grep -q "400\|401\|403\|404"; then
@@ -48,7 +48,7 @@ echo ""
 
 # Test import service
 echo "3️⃣  Testing import service..."
-IMPORT_HEALTH=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:8082/actuator/health || echo "000")
+IMPORT_HEALTH=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:8082/api/health || echo "000")
 if [ "$IMPORT_HEALTH" = "200" ] || [ "$IMPORT_HEALTH" = "503" ]; then
     echo -e "${GREEN}✅ Import service is responding${NC}"
 else

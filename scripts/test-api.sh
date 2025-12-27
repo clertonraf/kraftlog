@@ -19,5 +19,5 @@ docker-compose exec -T backend netstat -tln 2>/dev/null | grep 8080 || echo "Cou
 
 echo ""
 echo "4. Backend health:"
-curl -s http://localhost:8080/actuator/health 2>&1 | head -5 || echo "No actuator endpoint"
+curl -s http://localhost:8080/api/health 2>&1 | head -5 || echo "No actuator endpoint"
 
