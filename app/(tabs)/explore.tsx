@@ -343,18 +343,6 @@ export default function ExercisesScreen() {
             <Text style={styles.exerciseDescription}>{item.description}</Text>
           )}
 
-          <View style={styles.exerciseDetails}>
-            {item.sets && (
-              <Text style={styles.detailText}>Sets: {item.sets}</Text>
-            )}
-            {item.repetitions && (
-              <Text style={styles.detailText}>Reps: {item.repetitions}</Text>
-            )}
-            {item.defaultWeightKg && (
-              <Text style={styles.detailText}>Weight: {item.defaultWeightKg}kg</Text>
-            )}
-          </View>
-
           <View style={styles.musclesContainer}>
             {item.muscles.map((muscle) => (
               <View key={muscle.id} style={styles.muscleTag}>
@@ -591,17 +579,7 @@ const styles = StyleSheet.create({
   exerciseDescription: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 8,
-  },
-  exerciseDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 8,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#888',
-    marginRight: 15,
+    marginBottom: 12,
   },
   musclesContainer: {
     flexDirection: 'row',
