@@ -95,7 +95,7 @@ export const routineService = {
   },
 
   async activateRoutine(id: string): Promise<RoutineResponse> {
-    const response = await api.put<RoutineResponse>(`/routines/${id}`, { isActive: true });
+    const response = await api.put<RoutineResponse>(`/routines/${id}/activate`);
     return response.data;
   },
 
