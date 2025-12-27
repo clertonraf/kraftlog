@@ -47,3 +47,4 @@ app-example
 # temporary files
 *.tmp
 /tmp.env
+/tmp
