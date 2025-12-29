@@ -76,4 +76,17 @@ export const authService = {
       return false;
     }
   },
+
+  async requestPasswordRecovery(email: string): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/auth/password-recovery', { email });
+    return response.data;
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/auth/password-reset', {
+      token,
+      newPassword,
+    });
+    return response.data;
+  },
 };

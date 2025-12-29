@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,30 +11,65 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { authService } from '@/services/authService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function ResetPasswordScreen() {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { token } = useLocalSearchParams<{ token: string }>();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  useEffect(() => {
+    if (!token) {
+      Alert.alert('Error', 'Invalid or missing reset token', [
+        { text: 'OK', onPress: () => router.replace('/login') },
+      ]);
+    }
+  }, [token]);
+
+  const handleSubmit = async () => {
+    if (!newPassword || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (!token) {
+      Alert.alert('Error', 'Invalid reset token');
       return;
     }
 
     setLoading(true);
     try {
-      await login({ email, password });
-      router.replace('/(tabs)');
+      await authService.resetPassword(token as string, newPassword);
+      Alert.alert(
+        'Success',
+        'Your password has been reset successfully. You can now login with your new password.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/login'),
+          },
+        ]
+      );
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Login failed');
+      const errorMessage =
+        error.response?.data?.message ||
+        'Failed to reset password. The link may be invalid or expired.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -47,58 +82,50 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
-          <Text style={styles.title}>KraftLog</Text>
-          <Text style={styles.subtitle}>Welcome back!</Text>
+          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.subtitle}>Enter your new password below</Text>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
+              placeholder="New Password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
               editable={!loading}
+              testID="new-password-input"
             />
 
             <TextInput
               style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
+              placeholder="Confirm New Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
               secureTextEntry
               editable={!loading}
+              testID="confirm-password-input"
             />
 
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleLogin}
+              onPress={handleSubmit}
               disabled={loading}
+              testID="reset-password-button"
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Login</Text>
+                <Text style={styles.buttonText}>Reset Password</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => router.push('/forgot-password')}
+              onPress={() => router.replace('/login')}
               disabled={loading}
-              testID="forgot-password-link"
+              testID="back-to-login-button"
             >
               <Text style={styles.linkText}>
-                <Text style={styles.linkBold}>Forgot Password?</Text>
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push('/register')}
-              disabled={loading}
-              style={styles.registerLink}
-            >
-              <Text style={styles.linkText}>
-                Don't have an account? <Text style={styles.linkBold}>Sign up</Text>
+                <Text style={styles.linkBold}>Back to Login</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -121,7 +148,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
@@ -129,7 +156,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
     marginBottom: 40,
     color: '#666',
@@ -168,8 +195,5 @@ const styles = StyleSheet.create({
   linkBold: {
     color: '#007AFF',
     fontWeight: '600',
-  },
-  registerLink: {
-    marginTop: 10,
   },
 });
