@@ -345,11 +345,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...(Platform.OS === 'web' 
+      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' } 
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }
+    ),
   },
   activeRoutine: {
     borderWidth: 2,
@@ -434,10 +439,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    ...(Platform.OS === 'web' 
+      ? { boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.3)' } 
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 8,
+        }
+    ),
   },
 });
