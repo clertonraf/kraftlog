@@ -1,6 +1,6 @@
 import { getDatabase } from './database';
 import { ExerciseResponse, MuscleResponse, MuscleGroup, EquipmentType } from './exerciseService';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from '@/utils/uuid';
 
 export const offlineExerciseService = {
   async getAllExercises(): Promise<ExerciseResponse[]> {

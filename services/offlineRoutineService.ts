@@ -1,7 +1,7 @@
 import { getDatabase } from './database';
 import { routineService as onlineRoutineService } from './routineService';
 import { syncService } from './syncService';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from '@/utils/uuid';
 
 export interface RoutineLocal {
   id: string;
