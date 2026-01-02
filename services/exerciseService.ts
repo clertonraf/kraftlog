@@ -1,68 +1,24 @@
 import api from './api';
 import { isOfflineMode } from './api';
 import { offlineExerciseService } from './offlineExerciseService';
+import type {
+  MuscleResponse,
+  MuscleGroup,
+  EquipmentType,
+  ExerciseResponse,
+  ExerciseUpdateRequest,
+  ImportResult,
+} from '@/types/exercise';
 
-export interface MuscleResponse {
-  id: string;
-  name: string;
-  muscleGroup: MuscleGroup;
-}
+// Re-export types for backward compatibility
+export type {
+  MuscleResponse,
+  ExerciseResponse,
+  ExerciseUpdateRequest,
+  ImportResult,
+};
 
-export enum MuscleGroup {
-  CHEST = 'CHEST',
-  DELTOIDS = 'DELTOIDS',
-  SHOULDERS = 'SHOULDERS',
-  BICEPS = 'BICEPS',
-  TRICEPS = 'TRICEPS',
-  BACK = 'BACK',
-  FOREARMS = 'FOREARMS',
-  GLUTES = 'GLUTES',
-  LEGS = 'LEGS',
-  CALVES = 'CALVES',
-}
-
-export enum EquipmentType {
-  BARBELL = 'BARBELL',
-  DUMBBELL = 'DUMBBELL',
-  MACHINE = 'MACHINE',
-  CABLE = 'CABLE',
-  BODYWEIGHT = 'BODYWEIGHT',
-  OTHER = 'OTHER',
-}
-
-export interface ExerciseResponse {
-  id: string;
-  name: string;
-  description?: string;
-  sets?: number;
-  repetitions?: number;
-  technique?: string;
-  defaultWeightKg?: number;
-  videoUrl?: string;
-  equipmentType?: EquipmentType;
-  muscles: MuscleResponse[];
-}
-
-export interface ExerciseUpdateRequest {
-  name?: string;
-  description?: string;
-  sets?: number;
-  repetitions?: number;
-  technique?: string;
-  defaultWeightKg?: number;
-  videoUrl?: string;
-  equipmentType?: EquipmentType;
-  muscleIds?: string[];
-}
-
-export interface ImportResult {
-  status: string;
-  message: string;
-  totalProcessed: number;
-  successful: number;
-  failed: number;
-  failures: any[];
-}
+export { MuscleGroup, EquipmentType };
 
 export const exerciseService = {
   async getAllExercises(): Promise<ExerciseResponse[]> {

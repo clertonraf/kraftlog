@@ -1,5 +1,5 @@
 import { getDatabase } from './database';
-import { ExerciseResponse, MuscleResponse, MuscleGroup, EquipmentType } from './exerciseService';
+import type { ExerciseResponse, MuscleResponse, MuscleGroup, EquipmentType } from '@/types/exercise';
 import { v4 as uuidv4 } from '@/utils/uuid';
 
 export const offlineExerciseService = {
