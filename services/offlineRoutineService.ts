@@ -149,6 +149,106 @@ class OfflineRoutineService {
       console.log('Background sync will retry later');
     });
   }
+
+  // Create workout
+  async createWorkout(data: any): Promise<any> {
+    const db = await getDatabase();
+    const id = uuidv4();
+    const now = new Date().toISOString();
+
+    await db.runAsync(
+      `INSERT INTO workouts (id, routine_id, name, description, day_of_week, created_at, updated_at, synced)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+      [id, data.routineId, data.name, data.description || '', data.dayOfWeek || null, now, now]
+    );
+
+    // Add to sync queue
+    await syncService.addToSyncQueue('workouts', id, 'CREATE', {
+      ...data,
+      id,
+    });
+
+    // Try to sync immediately if online
+    syncService.syncAll().catch(() => {
+      console.log('Background sync will retry later');
+    });
+
+    return {
+      id,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+      synced: false,
+    };
+  }
+
+  // Update workout
+  async updateWorkout(id: string, data: any): Promise<any> {
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+
+    await db.runAsync(
+      `UPDATE workouts 
+       SET name = ?, description = ?, day_of_week = ?, updated_at = ?, synced = 0
+       WHERE id = ?`,
+      [data.name, data.description || '', data.dayOfWeek || null, now, id]
+    );
+
+    // Add to sync queue
+    await syncService.addToSyncQueue('workouts', id, 'UPDATE', data);
+
+    // Try to sync immediately if online
+    syncService.syncAll().catch(() => {
+      console.log('Background sync will retry later');
+    });
+
+    return { id, ...data, updatedAt: now, synced: false };
+  }
+
+  // Delete workout
+  async deleteWorkout(id: string): Promise<void> {
+    const db = await getDatabase();
+
+    // Delete from local database (cascade will handle related records)
+    await db.runAsync('DELETE FROM workouts WHERE id = ?', [id]);
+
+    // Add to sync queue
+    await syncService.addToSyncQueue('workouts', id, 'DELETE', {});
+
+    // Try to sync immediately if online
+    syncService.syncAll().catch(() => {
+      console.log('Background sync will retry later');
+    });
+  }
+
+  // Get workout by ID
+  async getWorkoutById(id: string): Promise<any> {
+    const db = await getDatabase();
+    
+    const workout = await db.getFirstAsync(
+      'SELECT * FROM workouts WHERE id = ?',
+      [id]
+    );
+
+    if (!workout) {
+      throw new Error('Workout not found');
+    }
+
+    // Get exercises for this workout
+    const workoutExercises = await db.getAllAsync(
+      `SELECT we.*, e.name as exercise_name 
+       FROM workout_exercises we
+       LEFT JOIN exercises e ON we.exercise_id = e.id
+       WHERE we.workout_id = ?
+       ORDER BY we.order_index`,
+      [id]
+    );
+
+    return {
+      ...workout,
+      workoutExercises,
+    };
+  }
 }
 
 export const offlineRoutineService = new OfflineRoutineService();

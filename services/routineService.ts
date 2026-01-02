@@ -135,7 +135,7 @@ export const routineService = {
 export const workoutService = {
   async createWorkout(data: WorkoutCreateRequest): Promise<WorkoutResponse> {
     if (await isOfflineMode()) {
-      throw new Error('Workout creation in offline mode not yet implemented');
+      return offlineRoutineService.createWorkout(data);
     }
     const response = await api.post<WorkoutResponse>('/workouts', data);
     return response.data;
@@ -143,7 +143,7 @@ export const workoutService = {
 
   async getWorkoutById(id: string): Promise<WorkoutResponse> {
     if (await isOfflineMode()) {
-      throw new Error('Workout operations in offline mode not yet implemented');
+      return offlineRoutineService.getWorkoutById(id);
     }
     const response = await api.get<WorkoutResponse>(`/workouts/${id}`);
     return response.data;
@@ -151,7 +151,7 @@ export const workoutService = {
 
   async updateWorkout(id: string, data: Partial<WorkoutCreateRequest>): Promise<WorkoutResponse> {
     if (await isOfflineMode()) {
-      throw new Error('Workout operations in offline mode not yet implemented');
+      return offlineRoutineService.updateWorkout(id, data);
     }
     const response = await api.put<WorkoutResponse>(`/workouts/${id}`, data);
     return response.data;
@@ -159,15 +159,16 @@ export const workoutService = {
 
   async deleteWorkout(id: string): Promise<void> {
     if (await isOfflineMode()) {
-      throw new Error('Workout operations in offline mode not yet implemented');
+      return offlineRoutineService.deleteWorkout(id);
     }
     await api.delete(`/workouts/${id}`);
   },
 
   async getWorkoutsByRoutineId(routineId: string): Promise<WorkoutResponse[]> {
     if (await isOfflineMode()) {
-      // Return empty for now, workouts are included in routine response
-      return [];
+      // In offline mode, get workouts from the routine response
+      const routine = await offlineRoutineService.getRoutineById(routineId);
+      return routine.workouts || [];
     }
     const response = await api.get<WorkoutResponse[]>(`/workouts/routine/${routineId}`);
     return response.data;
