@@ -1,10 +1,12 @@
 import api from './api';
 import { isOfflineMode } from './api';
 import { offlineExerciseService } from './offlineExerciseService';
-import type {
-  MuscleResponse,
+import {
   MuscleGroup,
   EquipmentType,
+} from '@/types/exercise';
+import type {
+  MuscleResponse,
   ExerciseResponse,
   ExerciseUpdateRequest,
   ImportResult,
@@ -18,6 +20,7 @@ export type {
   ImportResult,
 };
 
+// Re-export enums (must be imported as values, not types)
 export { MuscleGroup, EquipmentType };
 
 export const exerciseService = {
