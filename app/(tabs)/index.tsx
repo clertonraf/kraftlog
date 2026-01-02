@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, isOfflineMode } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -20,40 +20,56 @@ export default function HomeScreen() {
       <View style={[styles.content, { paddingTop: insets.top + 20 }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome to KraftLog!</Text>
-          <Text style={styles.subtitle}>Hello, {user?.name}!</Text>
+          <Text style={styles.subtitle}>
+            {isOfflineMode ? 'Using Offline Mode' : `Hello, ${user?.name}!`}
+          </Text>
         </View>
 
-        <SyncStatusIndicator />
+        {!isOfflineMode && <SyncStatusIndicator />}
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Profile</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Name:</Text>
-            <Text style={styles.value}>{user?.name} {user?.surname}</Text>
+        {user && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Your Profile</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Name:</Text>
+              <Text style={styles.value}>{user.name} {user.surname}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Email:</Text>
+              <Text style={styles.value}>{user.email}</Text>
+            </View>
+            {user.birthDate && (
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Birth Date:</Text>
+                <Text style={styles.value}>{user.birthDate}</Text>
+              </View>
+            )}
+            {user.weightKg && (
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Weight:</Text>
+                <Text style={styles.value}>{user.weightKg} kg</Text>
+              </View>
+            )}
+            {user.heightCm && (
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Height:</Text>
+                <Text style={styles.value}>{user.heightCm} cm</Text>
+              </View>
+            )}
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Email:</Text>
-            <Text style={styles.value}>{user?.email}</Text>
+        )}
+
+        {isOfflineMode && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Offline Mode</Text>
+            <Text style={styles.infoText}>
+              You're using KraftLog in offline mode. All your data is stored locally on this device.
+            </Text>
+            <Text style={styles.infoText}>
+              Go to Settings to connect to a remote server and sync your data across devices.
+            </Text>
           </View>
-          {user?.birthDate && (
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Birth Date:</Text>
-              <Text style={styles.value}>{user.birthDate}</Text>
-            </View>
-          )}
-          {user?.weightKg && (
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Weight:</Text>
-              <Text style={styles.value}>{user.weightKg} kg</Text>
-            </View>
-          )}
-          {user?.heightCm && (
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Height:</Text>
-              <Text style={styles.value}>{user.heightCm} cm</Text>
-            </View>
-          )}
-        </View>
+        )}
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Quick Actions</Text>
@@ -70,9 +86,11 @@ export default function HomeScreen() {
           <Text style={styles.comingSoon}>Coming soon...</Text>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        {!isOfflineMode && user && (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -135,6 +153,12 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 10,
+    lineHeight: 20,
   },
   actionButton: {
     backgroundColor: '#007AFF',
