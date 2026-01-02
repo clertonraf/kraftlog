@@ -86,9 +86,19 @@ class OfflineRoutineService {
     const now = new Date().toISOString();
 
     await db.runAsync(
-      `INSERT INTO routines (id, user_id, name, description, created_at, updated_at, synced)
-       VALUES (?, ?, ?, ?, ?, ?, 0)`,
-      [id, data.userId, data.name, data.description || '', now, now]
+      `INSERT INTO routines (id, user_id, name, description, is_active, start_date, end_date, created_at, updated_at, synced)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+      [
+        id,
+        data.userId,
+        data.name,
+        data.description || '',
+        data.isActive ? 1 : 0,
+        data.startDate || null,
+        data.endDate || null,
+        now,
+        now
+      ]
     );
 
     // Add to sync queue
@@ -116,11 +126,37 @@ class OfflineRoutineService {
     const db = await getDatabase();
     const now = new Date().toISOString();
 
+    // Build update query dynamically based on provided fields
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (data.name !== undefined) {
+      updates.push('name = ?');
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      updates.push('description = ?');
+      values.push(data.description);
+    }
+    if (data.isActive !== undefined) {
+      updates.push('is_active = ?');
+      values.push(data.isActive ? 1 : 0);
+    }
+    if (data.startDate !== undefined) {
+      updates.push('start_date = ?');
+      values.push(data.startDate);
+    }
+    if (data.endDate !== undefined) {
+      updates.push('end_date = ?');
+      values.push(data.endDate);
+    }
+
+    updates.push('updated_at = ?', 'synced = 0');
+    values.push(now, id);
+
     await db.runAsync(
-      `UPDATE routines 
-       SET name = ?, description = ?, updated_at = ?, synced = 0
-       WHERE id = ?`,
-      [data.name, data.description || '', now, id]
+      `UPDATE routines SET ${updates.join(', ')} WHERE id = ?`,
+      values
     );
 
     // Add to sync queue
