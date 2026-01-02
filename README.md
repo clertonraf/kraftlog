@@ -203,7 +203,26 @@ The backend comes with default users:
 - `npm run ios` - Run on iOS simulator
 - `npm run android` - Run on Android emulator
 - `npm run web` - Run in web browser
-- `npm run lint` - Run ESLint
+- `npm run lint` - Run Biome linter
+- `npm run lint:fix` - Auto-fix safe linting issues
+- `npm run lint:unsafe` - Auto-fix all linting issues (including unsafe)
+- `npm run format` - Format code with Biome
+- `npm run setup-hooks` - Install git pre-commit hooks
+- `npm run test:unit` - Run unit tests
+- `npm run test:e2e` - Run end-to-end tests
+
+## Code Quality
+
+This project uses [Biome](https://biomejs.dev/) for linting and code formatting. 
+
+- **Pre-commit hook**: Automatically lints and fixes code before each commit
+- **Setup**: Run `npm run setup-hooks` or happens automatically on `npm install`
+- **Documentation**: See [docs/LINTING.md](docs/LINTING.md) for detailed setup and usage
+- **Current status**: 0 errors, 37 warnings (non-blocking)
+
+For more information, see:
+- [Linting Guide](docs/LINTING.md) - Setup, commands, and best practices
+- [Biome Setup Summary](docs/BIOME_SETUP_SUMMARY.md) - What was configured and why
 
 ## Key Features Guide
 

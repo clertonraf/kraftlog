@@ -1,11 +1,28 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert, TextInput, Modal, Linking } from 'react-native';
-import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { workoutService, WorkoutResponse } from '@/services/routineService';
-import { logWorkoutService, logExerciseService, logSetService, logRoutineService, LogWorkoutResponse } from '@/services/logService';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import {
+  type LogWorkoutResponse,
+  logExerciseService,
+  logRoutineService,
+  logSetService,
+  logWorkoutService,
+} from '@/services/logService';
+import { type WorkoutResponse, workoutService } from '@/services/routineService';
 
 interface ExerciseLog {
   exerciseId: string;
@@ -28,7 +45,10 @@ interface SetLog {
 }
 
 export default function WorkoutSessionScreen() {
-  const { workoutId, logRoutineId } = useLocalSearchParams<{ workoutId: string; logRoutineId: string }>();
+  const { workoutId, logRoutineId } = useLocalSearchParams<{
+    workoutId: string;
+    logRoutineId: string;
+  }>();
   const insets = useSafeAreaInsets();
   const [workout, setWorkout] = useState<WorkoutResponse | null>(null);
   const [logWorkout, setLogWorkout] = useState<LogWorkoutResponse | null>(null);
@@ -49,11 +69,11 @@ export default function WorkoutSessionScreen() {
 
   useEffect(() => {
     loadData();
-  }, [workoutId]);
+  }, [loadData]);
 
   const loadData = async () => {
     if (!workoutId || !logRoutineId) return;
-    
+
     setLoading(true);
     try {
       const [workoutData, previousWorkoutData] = await Promise.all([
@@ -62,7 +82,7 @@ export default function WorkoutSessionScreen() {
       ]);
       setWorkout(workoutData);
       setPreviousWorkout(previousWorkoutData);
-      
+
       console.log('Previous workout data:', previousWorkoutData);
       console.log('Previous workout logExercises:', previousWorkoutData?.logExercises);
       console.log('Current workout exercises:', workoutData.exercises);
@@ -75,7 +95,7 @@ export default function WorkoutSessionScreen() {
       });
       setLogWorkout(logWorkoutData);
 
-      const initialLogs: ExerciseLog[] = (workoutData.exercises || []).map(ex => ({
+      const initialLogs: ExerciseLog[] = (workoutData.exercises || []).map((ex) => ({
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
         recommendedSets: ex.recommendedSets,
@@ -102,10 +122,10 @@ export default function WorkoutSessionScreen() {
     if (!logWorkout || (!untilFailure && !newSetReps) || (useWeight && !newSetWeight)) return;
 
     const currentExercise = exerciseLogs[currentExerciseIndex];
-    
+
     try {
       let logExerciseId = currentExercise.logExerciseId;
-      
+
       if (!logExerciseId) {
         const logExercise = await logExerciseService.createLogExercise({
           logWorkoutId: logWorkout.id,
@@ -120,13 +140,13 @@ export default function WorkoutSessionScreen() {
       const logSet = await logSetService.createLogSet({
         logExerciseId: logExerciseId,
         setNumber: setNumber,
-        reps: untilFailure ? 0 : parseInt(newSetReps),
+        reps: untilFailure ? 0 : parseInt(newSetReps, 10),
         weightKg: useWeight ? parseFloat(newSetWeight) : null,
       });
 
       const newSet: SetLog = {
         setNumber: setNumber,
-        reps: untilFailure ? 0 : parseInt(newSetReps),
+        reps: untilFailure ? 0 : parseInt(newSetReps, 10),
         weightKg: useWeight ? parseFloat(newSetWeight) : null,
         logSetId: logSet.id,
         saved: true,
@@ -158,7 +178,7 @@ export default function WorkoutSessionScreen() {
   const handleDuplicateLastSet = () => {
     const currentExercise = exerciseLogs[currentExerciseIndex];
     if (currentExercise.sets.length === 0) return;
-    
+
     const lastSet = currentExercise.sets[currentExercise.sets.length - 1];
     setNewSetReps(lastSet.reps.toString());
     setNewSetWeight(lastSet.weightKg?.toString() || '');
@@ -179,7 +199,8 @@ export default function WorkoutSessionScreen() {
   };
 
   const handleUpdateSet = async () => {
-    if ((!untilFailure && !newSetReps) || (useWeight && !newSetWeight) || editingSetIndex === null) return;
+    if ((!untilFailure && !newSetReps) || (useWeight && !newSetWeight) || editingSetIndex === null)
+      return;
 
     const currentExercise = exerciseLogs[currentExerciseIndex];
     const set = currentExercise.sets[editingSetIndex];
@@ -189,7 +210,7 @@ export default function WorkoutSessionScreen() {
         await logSetService.updateLogSet(set.logSetId, {
           logExerciseId: currentExercise.logExerciseId!,
           setNumber: set.setNumber,
-          reps: untilFailure ? 0 : parseInt(newSetReps),
+          reps: untilFailure ? 0 : parseInt(newSetReps, 10),
           weightKg: useWeight ? parseFloat(newSetWeight) : null,
         });
       }
@@ -197,7 +218,7 @@ export default function WorkoutSessionScreen() {
       const updatedLogs = [...exerciseLogs];
       updatedLogs[currentExerciseIndex].sets[editingSetIndex] = {
         ...set,
-        reps: untilFailure ? 0 : parseInt(newSetReps),
+        reps: untilFailure ? 0 : parseInt(newSetReps, 10),
         weightKg: useWeight ? parseFloat(newSetWeight) : null,
         untilFailure: untilFailure,
       };
@@ -223,14 +244,15 @@ export default function WorkoutSessionScreen() {
     const set = currentExercise.sets[index];
 
     const confirmMsg = 'Delete this set?';
-    const shouldDelete = Platform.OS === 'web'
-      ? window.confirm(confirmMsg)
-      : await new Promise(resolve => {
-          Alert.alert('Delete Set', confirmMsg, [
-            { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-            { text: 'Delete', onPress: () => resolve(true), style: 'destructive' },
-          ]);
-        });
+    const shouldDelete =
+      Platform.OS === 'web'
+        ? window.confirm(confirmMsg)
+        : await new Promise((resolve) => {
+            Alert.alert('Delete Set', confirmMsg, [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Delete', onPress: () => resolve(true), style: 'destructive' },
+            ]);
+          });
 
     if (!shouldDelete) return;
 
@@ -260,7 +282,7 @@ export default function WorkoutSessionScreen() {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    return match && match[2].length === 11 ? match[2] : null;
   };
 
   const getPreviousExerciseData = (exerciseId: string) => {
@@ -268,7 +290,7 @@ export default function WorkoutSessionScreen() {
       console.log('No previous workout or exercises');
       return null;
     }
-    const found = previousWorkout.logExercises.find(ex => ex.exerciseId === exerciseId);
+    const found = previousWorkout.logExercises.find((ex) => ex.exerciseId === exerciseId);
     console.log(`Looking for exerciseId ${exerciseId}, found:`, found);
     return found;
   };
@@ -277,14 +299,15 @@ export default function WorkoutSessionScreen() {
     if (!logWorkout) return;
 
     const confirmMsg = 'Are you sure you want to complete this workout?';
-    const shouldComplete = Platform.OS === 'web' 
-      ? window.confirm(confirmMsg)
-      : await new Promise(resolve => {
-          Alert.alert('Complete Workout', confirmMsg, [
-            { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-            { text: 'Complete', onPress: () => resolve(true) },
-          ]);
-        });
+    const shouldComplete =
+      Platform.OS === 'web'
+        ? window.confirm(confirmMsg)
+        : await new Promise((resolve) => {
+            Alert.alert('Complete Workout', confirmMsg, [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Complete', onPress: () => resolve(true) },
+            ]);
+          });
 
     if (!shouldComplete) return;
 
@@ -321,7 +344,8 @@ export default function WorkoutSessionScreen() {
       }
       router.back();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to complete workout';
+      const errorMsg =
+        error.response?.data?.message || error.message || 'Failed to complete workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -357,11 +381,11 @@ export default function WorkoutSessionScreen() {
       </View>
 
       <View style={styles.progressBar}>
-        <View 
+        <View
           style={[
-            styles.progressBarFill, 
-            { width: `${((currentExerciseIndex + 1) / exerciseLogs.length) * 100}%` }
-          ]} 
+            styles.progressBarFill,
+            { width: `${((currentExerciseIndex + 1) / exerciseLogs.length) * 100}%` },
+          ]}
         />
         <Text style={styles.progressText}>
           Exercise {currentExerciseIndex + 1} of {exerciseLogs.length}
@@ -373,7 +397,8 @@ export default function WorkoutSessionScreen() {
           <Text style={styles.exerciseName}>{currentExercise.exerciseName}</Text>
           {currentExercise.recommendedSets && currentExercise.recommendedReps && (
             <Text style={styles.recommended}>
-              Recommended: {currentExercise.recommendedSets} sets × {currentExercise.recommendedReps} reps
+              Recommended: {currentExercise.recommendedSets} sets ×{' '}
+              {currentExercise.recommendedReps} reps
             </Text>
           )}
           {currentExercise.trainingTechnique && (
@@ -383,14 +408,13 @@ export default function WorkoutSessionScreen() {
             </View>
           )}
           {currentExercise.videoUrl && (
-            <TouchableOpacity 
-              style={styles.videoButton}
-              onPress={() => setShowVideo(!showVideo)}
-            >
-              <Ionicons name={showVideo ? "videocam" : "videocam-outline"} size={20} color="#007AFF" />
-              <Text style={styles.videoButtonText}>
-                {showVideo ? 'Hide Video' : 'Show Video'}
-              </Text>
+            <TouchableOpacity style={styles.videoButton} onPress={() => setShowVideo(!showVideo)}>
+              <Ionicons
+                name={showVideo ? 'videocam' : 'videocam-outline'}
+                size={20}
+                color="#007AFF"
+              />
+              <Text style={styles.videoButtonText}>{showVideo ? 'Hide Video' : 'Show Video'}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -399,6 +423,7 @@ export default function WorkoutSessionScreen() {
           <View style={styles.videoContainer}>
             {Platform.OS === 'web' ? (
               <iframe
+                title={`Exercise video: ${currentExercise.name}`}
                 width="100%"
                 height="250"
                 src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentExercise.videoUrl)}`}
@@ -410,7 +435,9 @@ export default function WorkoutSessionScreen() {
             ) : (
               <WebView
                 style={styles.webView}
-                source={{ uri: `https://www.youtube.com/embed/${getYouTubeVideoId(currentExercise.videoUrl)}` }}
+                source={{
+                  uri: `https://www.youtube.com/embed/${getYouTubeVideoId(currentExercise.videoUrl)}`,
+                }}
                 allowsFullscreenVideo
               />
             )}
@@ -419,7 +446,7 @@ export default function WorkoutSessionScreen() {
 
         {previousWorkout && getPreviousExerciseData(currentExercise.exerciseId) && (
           <View style={styles.previousDataCard}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.previousDataHeader}
               onPress={() => setShowPreviousData(!showPreviousData)}
             >
@@ -427,20 +454,20 @@ export default function WorkoutSessionScreen() {
                 <Ionicons name="time-outline" size={20} color="#666" />
                 <Text style={styles.previousDataTitle}>Last Workout Reference</Text>
               </View>
-              <Ionicons 
-                name={showPreviousData ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color="#666" 
+              <Ionicons
+                name={showPreviousData ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#666"
               />
             </TouchableOpacity>
-            
+
             {showPreviousData && (
               <View style={styles.previousDataContent}>
                 <Text style={styles.previousDataDate}>
                   {new Date(previousWorkout.startDatetime).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
-                    year: 'numeric'
+                    year: 'numeric',
                   })}
                 </Text>
                 {getPreviousExerciseData(currentExercise.exerciseId)?.logSets?.map((set, idx) => (
@@ -458,7 +485,7 @@ export default function WorkoutSessionScreen() {
 
         <View style={styles.setsSection}>
           <Text style={styles.sectionTitle}>Sets ({currentExercise.sets.length})</Text>
-          
+
           {currentExercise.sets.map((set, index) => (
             <View key={index} style={styles.setCard}>
               <View style={styles.setNumber}>
@@ -487,7 +514,7 @@ export default function WorkoutSessionScreen() {
           ))}
 
           <View style={styles.addSetButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addSetButton}
               onPress={() => {
                 setNewSetReps('');
@@ -502,7 +529,7 @@ export default function WorkoutSessionScreen() {
             </TouchableOpacity>
 
             {currentExercise.sets.length > 0 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.addSetButton, { marginLeft: 8, backgroundColor: '#E3F2FD' }]}
                 onPress={handleDuplicateLastSet}
               >
@@ -524,7 +551,7 @@ export default function WorkoutSessionScreen() {
             <Text style={styles.navButtonText}>Previous</Text>
           </TouchableOpacity>
         )}
-        
+
         {currentExerciseIndex < exerciseLogs.length - 1 ? (
           <TouchableOpacity
             style={[styles.navButton, styles.nextButton]}
@@ -560,16 +587,16 @@ export default function WorkoutSessionScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Log Set</Text>
-            
+
             <View style={styles.checkboxRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.checkbox}
                 onPress={() => setUntilFailure(!untilFailure)}
               >
-                <Ionicons 
-                  name={untilFailure ? "checkbox" : "square-outline"} 
-                  size={24} 
-                  color="#007AFF" 
+                <Ionicons
+                  name={untilFailure ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color="#007AFF"
                 />
                 <Text style={styles.checkboxLabel}>Until Failure</Text>
               </TouchableOpacity>
@@ -587,16 +614,13 @@ export default function WorkoutSessionScreen() {
                 />
               </>
             )}
-            
+
             <View style={styles.checkboxRow}>
-              <TouchableOpacity 
-                style={styles.checkbox}
-                onPress={() => setUseWeight(!useWeight)}
-              >
-                <Ionicons 
-                  name={useWeight ? "checkbox" : "square-outline"} 
-                  size={24} 
-                  color="#007AFF" 
+              <TouchableOpacity style={styles.checkbox} onPress={() => setUseWeight(!useWeight)}>
+                <Ionicons
+                  name={useWeight ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color="#007AFF"
                 />
                 <Text style={styles.checkboxLabel}>Use Weight</Text>
               </TouchableOpacity>
@@ -614,7 +638,7 @@ export default function WorkoutSessionScreen() {
                 />
               </>
             )}
-            
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -630,8 +654,9 @@ export default function WorkoutSessionScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.modalSaveButton, 
-                  ((!untilFailure && !newSetReps) || (useWeight && !newSetWeight)) && styles.modalSaveButtonDisabled
+                  styles.modalSaveButton,
+                  ((!untilFailure && !newSetReps) || (useWeight && !newSetWeight)) &&
+                    styles.modalSaveButtonDisabled,
                 ]}
                 onPress={handleAddSet}
                 disabled={(!untilFailure && !newSetReps) || (useWeight && !newSetWeight)}
@@ -659,16 +684,16 @@ export default function WorkoutSessionScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Set</Text>
-            
+
             <View style={styles.checkboxRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.checkbox}
                 onPress={() => setUntilFailure(!untilFailure)}
               >
-                <Ionicons 
-                  name={untilFailure ? "checkbox" : "square-outline"} 
-                  size={24} 
-                  color="#007AFF" 
+                <Ionicons
+                  name={untilFailure ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color="#007AFF"
                 />
                 <Text style={styles.checkboxLabel}>Until Failure</Text>
               </TouchableOpacity>
@@ -686,16 +711,13 @@ export default function WorkoutSessionScreen() {
                 />
               </>
             )}
-            
+
             <View style={styles.checkboxRow}>
-              <TouchableOpacity 
-                style={styles.checkbox}
-                onPress={() => setUseWeight(!useWeight)}
-              >
-                <Ionicons 
-                  name={useWeight ? "checkbox" : "square-outline"} 
-                  size={24} 
-                  color="#007AFF" 
+              <TouchableOpacity style={styles.checkbox} onPress={() => setUseWeight(!useWeight)}>
+                <Ionicons
+                  name={useWeight ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color="#007AFF"
                 />
                 <Text style={styles.checkboxLabel}>Use Weight</Text>
               </TouchableOpacity>
@@ -713,7 +735,7 @@ export default function WorkoutSessionScreen() {
                 />
               </>
             )}
-            
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -730,8 +752,9 @@ export default function WorkoutSessionScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.modalSaveButton, 
-                  ((!untilFailure && !newSetReps) || (useWeight && !newSetWeight)) && styles.modalSaveButtonDisabled
+                  styles.modalSaveButton,
+                  ((!untilFailure && !newSetReps) || (useWeight && !newSetWeight)) &&
+                    styles.modalSaveButtonDisabled,
                 ]}
                 onPress={handleUpdateSet}
                 disabled={(!untilFailure && !newSetReps) || (useWeight && !newSetWeight)}
@@ -879,8 +902,7 @@ const styles = StyleSheet.create({
           shadowOpacity: 0.1,
           shadowRadius: 2,
           elevation: 2,
-        }
-    ),
+        }),
   },
   setNumber: {
     width: 40,

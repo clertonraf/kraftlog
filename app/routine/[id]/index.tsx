@@ -1,12 +1,26 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert, FlatList } from 'react-native';
-import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { routineService, RoutineResponse, workoutService, WorkoutResponse } from '@/services/routineService';
-import { logRoutineService, LogRoutineResponse } from '@/services/logService';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { type LogRoutineResponse, logRoutineService } from '@/services/logService';
+import {
+  type RoutineResponse,
+  routineService,
+  type WorkoutResponse,
+  workoutService,
+} from '@/services/routineService';
 
 type TabType = 'workouts' | 'calendar';
 
@@ -22,12 +36,12 @@ export default function RoutineDetailsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRoutine();
-    }, [id])
+    }, [loadRoutine])
   );
 
   const loadRoutine = async () => {
     if (!id) return;
-    
+
     setLoading(true);
     try {
       const [routineData, workoutsData, logRoutinesData] = await Promise.all([
@@ -57,7 +71,8 @@ export default function RoutineDetailsScreen() {
         await workoutService.deleteWorkout(workoutId);
         loadRoutine();
       } catch (error: any) {
-        const errorMsg = error.response?.data?.message || error.message || 'Failed to delete workout';
+        const errorMsg =
+          error.response?.data?.message || error.message || 'Failed to delete workout';
         if (Platform.OS === 'web') {
           alert(`Error: ${errorMsg}`);
         } else {
@@ -71,20 +86,16 @@ export default function RoutineDetailsScreen() {
         confirmDelete();
       }
     } else {
-      Alert.alert(
-        'Delete Workout',
-        'Are you sure you want to delete this workout?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: confirmDelete },
-        ]
-      );
+      Alert.alert('Delete Workout', 'Are you sure you want to delete this workout?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: confirmDelete },
+      ]);
     }
   };
 
   const getMarkedDates = () => {
     const marked: any = {};
-    
+
     logRoutines.forEach((log) => {
       if (log.endDatetime) {
         const date = new Date(log.startDatetime).toISOString().split('T')[0];
@@ -96,7 +107,7 @@ export default function RoutineDetailsScreen() {
         };
       }
     });
-    
+
     return marked;
   };
 
@@ -109,9 +120,9 @@ export default function RoutineDetailsScreen() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -121,7 +132,7 @@ export default function RoutineDetailsScreen() {
     const minutes = Math.floor(durationMs / (1000 * 60));
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    
+
     if (hours > 0) {
       return `${hours}h ${remainingMinutes}m`;
     }
@@ -129,10 +140,7 @@ export default function RoutineDetailsScreen() {
   };
 
   const renderWorkout = ({ item, index }: { item: WorkoutResponse; index: number }) => (
-    <TouchableOpacity
-      style={styles.workoutCard}
-      onPress={() => router.push(`/workout/${item.id}`)}
-    >
+    <TouchableOpacity style={styles.workoutCard} onPress={() => router.push(`/workout/${item.id}`)}>
       <View style={styles.workoutHeader}>
         <View style={styles.workoutInfo}>
           <View style={styles.workoutTitleRow}>
@@ -158,7 +166,7 @@ export default function RoutineDetailsScreen() {
             </View>
           )}
         </View>
-        
+
         <TouchableOpacity
           onPress={(e) => {
             e.stopPropagation();
@@ -201,10 +209,10 @@ export default function RoutineDetailsScreen() {
           style={[styles.tab, activeTab === 'workouts' && styles.activeTab]}
           onPress={() => setActiveTab('workouts')}
         >
-          <Ionicons 
-            name="barbell" 
-            size={20} 
-            color={activeTab === 'workouts' ? '#007AFF' : '#999'} 
+          <Ionicons
+            name="barbell"
+            size={20}
+            color={activeTab === 'workouts' ? '#007AFF' : '#999'}
           />
           <Text style={[styles.tabText, activeTab === 'workouts' && styles.activeTabText]}>
             Workouts
@@ -214,10 +222,10 @@ export default function RoutineDetailsScreen() {
           style={[styles.tab, activeTab === 'calendar' && styles.activeTab]}
           onPress={() => setActiveTab('calendar')}
         >
-          <Ionicons 
-            name="calendar" 
-            size={20} 
-            color={activeTab === 'calendar' ? '#007AFF' : '#999'} 
+          <Ionicons
+            name="calendar"
+            size={20}
+            color={activeTab === 'calendar' ? '#007AFF' : '#999'}
           />
           <Text style={[styles.tabText, activeTab === 'calendar' && styles.activeTabText]}>
             History
@@ -233,7 +241,7 @@ export default function RoutineDetailsScreen() {
               <Text style={styles.activeBadgeText}>ACTIVE ROUTINE</Text>
             </View>
           )}
-          
+
           <View style={styles.dateRow}>
             <Ionicons name="calendar-outline" size={18} color="#666" />
             <Text style={styles.dateText}>
@@ -339,44 +347,46 @@ export default function RoutineDetailsScreen() {
 
             <View style={styles.historyList}>
               <Text style={styles.sectionTitle}>Recent Sessions</Text>
-              {logRoutines.filter(log => log.endDatetime).slice(0, 10).map((log) => (
-                <TouchableOpacity
-                  key={log.id}
-                  style={styles.historyCard}
-                  onPress={() => router.push(`/history/routine/${log.id}`)}
-                >
-                  <View style={styles.historyHeader}>
-                    <View style={styles.historyDateContainer}>
-                      <Ionicons name="calendar" size={18} color="#007AFF" />
-                      <Text style={styles.historyDate}>
-                        {new Date(log.startDatetime).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </Text>
+              {logRoutines
+                .filter((log) => log.endDatetime)
+                .slice(0, 10)
+                .map((log) => (
+                  <TouchableOpacity
+                    key={log.id}
+                    style={styles.historyCard}
+                    onPress={() => router.push(`/history/routine/${log.id}`)}
+                  >
+                    <View style={styles.historyHeader}>
+                      <View style={styles.historyDateContainer}>
+                        <Ionicons name="calendar" size={18} color="#007AFF" />
+                        <Text style={styles.historyDate}>
+                          {new Date(log.startDatetime).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </Text>
+                      </View>
+                      <Text style={styles.historyTime}>{formatTime(log.startDatetime)}</Text>
                     </View>
-                    <Text style={styles.historyTime}>
-                      {formatTime(log.startDatetime)}
-                    </Text>
-                  </View>
-                  <View style={styles.historyDetails}>
-                    <View style={styles.historyDetailItem}>
-                      <Ionicons name="barbell" size={16} color="#666" />
-                      <Text style={styles.historyDetailText}>
-                        {log.logWorkouts?.length || 0} workout{log.logWorkouts?.length !== 1 ? 's' : ''}
-                      </Text>
+                    <View style={styles.historyDetails}>
+                      <View style={styles.historyDetailItem}>
+                        <Ionicons name="barbell" size={16} color="#666" />
+                        <Text style={styles.historyDetailText}>
+                          {log.logWorkouts?.length || 0} workout
+                          {log.logWorkouts?.length !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.historyDetailItem}>
+                        <Ionicons name="time" size={16} color="#666" />
+                        <Text style={styles.historyDetailText}>
+                          {calculateDuration(log.startDatetime, log.endDatetime)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.historyDetailItem}>
-                      <Ionicons name="time" size={16} color="#666" />
-                      <Text style={styles.historyDetailText}>
-                        {calculateDuration(log.startDatetime, log.endDatetime)}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {logRoutines.filter(log => log.endDatetime).length === 0 && (
+                  </TouchableOpacity>
+                ))}
+              {logRoutines.filter((log) => log.endDatetime).length === 0 && (
                 <View style={styles.emptyContainer}>
                   <Ionicons name="calendar-outline" size={48} color="#999" />
                   <Text style={styles.emptyText}>No workout history</Text>
@@ -538,12 +548,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...(Platform.OS === 'web' 
-
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' } 
-
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' }
       : {
-
           shadowColor: '#000',
 
           shadowOffset: { width: 0, height: 1 },
@@ -553,10 +560,7 @@ const styles = StyleSheet.create({
           shadowRadius: 2,
 
           elevation: 2,
-
-        }
-
-    ),
+        }),
   },
   workoutHeader: {
     flexDirection: 'row',
@@ -681,12 +685,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 8,
     marginBottom: 16,
-    ...(Platform.OS === 'web' 
-
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' } 
-
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' }
       : {
-
           shadowColor: '#000',
 
           shadowOffset: { width: 0, height: 1 },
@@ -696,10 +697,7 @@ const styles = StyleSheet.create({
           shadowRadius: 2,
 
           elevation: 2,
-
-        }
-
-    ),
+        }),
   },
   legendContainer: {
     backgroundColor: '#FFF',
@@ -729,12 +727,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...(Platform.OS === 'web' 
-
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' } 
-
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' }
       : {
-
           shadowColor: '#000',
 
           shadowOffset: { width: 0, height: 1 },
@@ -744,10 +739,7 @@ const styles = StyleSheet.create({
           shadowRadius: 2,
 
           elevation: 2,
-
-        }
-
-    ),
+        }),
   },
   historyHeader: {
     flexDirection: 'row',

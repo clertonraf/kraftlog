@@ -1,24 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import * as DocumentPicker from 'expo-document-picker';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
+  FlatList,
   Linking,
   Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
-import { exerciseService, ExerciseResponse, MuscleResponse, MuscleGroup } from '@/services/exerciseService';
-import EditExerciseModal from '@/components/EditExerciseModal';
 import YoutubePlayer from 'react-native-youtube-iframe';
+import EditExerciseModal from '@/components/EditExerciseModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import {
+  type ExerciseResponse,
+  exerciseService,
+  MuscleGroup,
+  type MuscleResponse,
+} from '@/services/exerciseService';
 
 export default function ExercisesScreen() {
   const [exercises, setExercises] = useState<ExerciseResponse[]>([]);
@@ -33,21 +38,6 @@ export default function ExercisesScreen() {
   const insets = useSafeAreaInsets();
   const { isAdmin, useRemoteServer } = useAuth();
   const layout = useResponsiveLayout();
-
-  // Reload data whenever the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  useEffect(() => {
-    console.log('Filtering exercises...');
-    console.log('Total exercises:', exercises.length);
-    console.log('Search query:', searchQuery);
-    console.log('Selected muscle group:', selectedMuscleGroup);
-    filterExercises();
-  }, [searchQuery, selectedMuscleGroup, exercises]);
 
   const loadData = async () => {
     try {
@@ -78,9 +68,7 @@ export default function ExercisesScreen() {
     let filtered = exercises;
 
     if (searchQuery) {
-      filtered = filtered.filter((ex) =>
-        ex.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = filtered.filter((ex) => ex.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
     if (selectedMuscleGroup !== 'ALL') {
@@ -92,6 +80,21 @@ export default function ExercisesScreen() {
     console.log('Filtered exercises:', filtered.length);
     setFilteredExercises(filtered);
   };
+
+  // Reload data whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  useEffect(() => {
+    console.log('Filtering exercises...');
+    console.log('Total exercises:', exercises.length);
+    console.log('Search query:', searchQuery);
+    console.log('Selected muscle group:', selectedMuscleGroup);
+    filterExercises();
+  }, [searchQuery, selectedMuscleGroup, exercises, filterExercises]);
 
   const handleImportPdf = async () => {
     console.log('=== IMPORT PDF STARTED ===');
@@ -116,14 +119,14 @@ export default function ExercisesScreen() {
 
       const file = result.assets[0];
       console.log('Selected file:', file);
-      
+
       // Show confirmation
       if (Platform.OS === 'web') {
         // On web, use window.confirm instead of Alert.alert
         const confirmed = window.confirm(
-          `Import exercises from:\n${file.name}\n\nSize: ${(file.size / 1024).toFixed(1)} KB\n\nClick OK to import.`
+          `Import exercises from:\n${file.name}\n\nSize: ${((file.size || 0) / 1024).toFixed(1)} KB\n\nClick OK to import.`
         );
-        
+
         if (!confirmed) {
           console.log('User canceled confirmation');
           return;
@@ -131,7 +134,7 @@ export default function ExercisesScreen() {
 
         console.log('User confirmed, starting import...');
         setImporting(true);
-        
+
         try {
           const formData = new FormData();
           const response = await fetch(file.uri);
@@ -143,7 +146,9 @@ export default function ExercisesScreen() {
           const importResult = await exerciseService.importExercisesFromPdf(formData);
           console.log('Import result:', importResult);
 
-          alert(`Import Complete!\n\nSuccessfully imported ${importResult.successful} exercises.\nFailed: ${importResult.failed}`);
+          alert(
+            `Import Complete!\n\nSuccessfully imported ${importResult.successful} exercises.\nFailed: ${importResult.failed}`
+          );
           loadData();
         } catch (error: any) {
           console.error('Import error:', error);
@@ -156,14 +161,14 @@ export default function ExercisesScreen() {
         // Native platform - use Alert.alert
         Alert.alert(
           'Confirm Import',
-          `Import exercises from:\n${file.name}\n\nSize: ${(file.size / 1024).toFixed(1)} KB`,
+          `Import exercises from:\n${file.name}\n\nSize: ${((file.size || 0) / 1024).toFixed(1)} KB`,
           [
             { text: 'Cancel', style: 'cancel' },
-            { 
+            {
               text: 'Import',
               onPress: async () => {
                 setImporting(true);
-                
+
                 try {
                   const formData = new FormData();
                   formData.append('file', {
@@ -180,17 +185,17 @@ export default function ExercisesScreen() {
                     [{ text: 'OK', onPress: loadData }]
                   );
                 } catch (error: any) {
-                  const errorMsg = error.response?.data?.message || error.message || 'Failed to import PDF';
+                  const errorMsg =
+                    error.response?.data?.message || error.message || 'Failed to import PDF';
                   Alert.alert('Import Error', errorMsg);
                 } finally {
                   setImporting(false);
                 }
-              }
+              },
             },
           ]
         );
       }
-      
     } catch (error: any) {
       console.error('PDF selection error:', error);
       alert(`Error: ${error.message || 'Failed to select PDF file'}`);
@@ -218,7 +223,7 @@ export default function ExercisesScreen() {
     setIsCreating(true);
   };
 
-  const handleEditExercise = (exercise: ExerciseResponse) => {
+  const _handleEditExercise = (exercise: ExerciseResponse) => {
     setEditingExercise(exercise);
   };
 
@@ -233,7 +238,8 @@ export default function ExercisesScreen() {
         }
         loadData();
       } catch (error: any) {
-        const errorMsg = error.response?.data?.message || error.message || 'Failed to delete exercise';
+        const errorMsg =
+          error.response?.data?.message || error.message || 'Failed to delete exercise';
         if (Platform.OS === 'web') {
           alert(`Error: ${errorMsg}`);
         } else {
@@ -262,53 +268,47 @@ export default function ExercisesScreen() {
 
   const extractYoutubeVideoId = (url: string): string | null => {
     if (!url) return null;
-    
+
     // Handle various YouTube URL formats
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
       /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
     ];
-    
+
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match) return match[1];
     }
-    
+
     return null;
   };
 
   const handleOpenVideo = (videoUrl: string) => {
     if (videoUrl) {
-      Linking.openURL(videoUrl).catch(() =>
-        Alert.alert('Error', 'Could not open video URL')
-      );
+      Linking.openURL(videoUrl).catch(() => Alert.alert('Error', 'Could not open video URL'));
     }
   };
 
   const renderExercise = ({ item }: { item: ExerciseResponse }) => {
     const videoId = item.videoUrl ? extractYoutubeVideoId(item.videoUrl) : null;
     console.log('Exercise:', item.name, 'videoUrl:', item.videoUrl, 'videoId:', videoId);
-    
+
     return (
       <View style={styles.exerciseCard}>
         {videoId && (
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={1}
             onPress={(e) => {
               e.stopPropagation();
             }}
           >
             <View style={styles.videoContainer}>
-              <YoutubePlayer
-                height={200}
-                videoId={videoId}
-                play={false}
-              />
+              <YoutubePlayer height={200} videoId={videoId} play={false} />
             </View>
           </TouchableOpacity>
         )}
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.exerciseContent}
           onPress={() => handleExercisePress(item)}
           activeOpacity={0.7}
@@ -341,9 +341,7 @@ export default function ExercisesScreen() {
             </View>
           </View>
 
-          {item.description && (
-            <Text style={styles.exerciseDescription}>{item.description}</Text>
-          )}
+          {item.description && <Text style={styles.exerciseDescription}>{item.description}</Text>}
 
           <View style={styles.musclesContainer}>
             {item.muscles.map((muscle) => (
@@ -357,10 +355,7 @@ export default function ExercisesScreen() {
     );
   };
 
-  const muscleGroups: Array<MuscleGroup | 'ALL'> = [
-    'ALL',
-    ...Object.values(MuscleGroup),
-  ];
+  const muscleGroups: Array<MuscleGroup | 'ALL'> = ['ALL', ...Object.values(MuscleGroup)];
 
   if (loading) {
     return (
@@ -372,10 +367,12 @@ export default function ExercisesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[
-        styles.contentWrapper,
-        layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' }
-      ]}>
+      <View
+        style={[
+          styles.contentWrapper,
+          layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' },
+        ]}
+      >
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <Text style={styles.title}>Exercises</Text>
 
@@ -427,20 +424,20 @@ export default function ExercisesScreen() {
           )}
         </View>
 
-      <FlatList
-        data={filteredExercises}
-        keyExtractor={(item) => item.id}
-        renderItem={renderExercise}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No exercises found</Text>
-            <Text style={styles.emptySubtext}>
-              Try adjusting your filters or import exercises from a PDF
-            </Text>
-          </View>
-        }
-      />
+        <FlatList
+          data={filteredExercises}
+          keyExtractor={(item) => item.id}
+          renderItem={renderExercise}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No exercises found</Text>
+              <Text style={styles.emptySubtext}>
+                Try adjusting your filters or import exercises from a PDF
+              </Text>
+            </View>
+          }
+        />
 
         {isAdmin && (
           <TouchableOpacity
@@ -549,8 +546,7 @@ const styles = StyleSheet.create({
           shadowOpacity: 0.1,
           shadowRadius: 4,
           elevation: 3,
-        }
-    ),
+        }),
     overflow: 'hidden',
   },
   videoContainer: {
@@ -640,16 +636,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
           elevation: 8,
-        }
-    ),
+        }),
   },
   fabText: {
     fontSize: 32,

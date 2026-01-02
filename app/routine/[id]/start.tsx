@@ -1,11 +1,25 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { routineService, RoutineResponse, workoutService, WorkoutResponse } from '@/services/routineService';
-import { logRoutineService, logWorkoutService } from '@/services/logService';
-import { useAuth } from '@/contexts/AuthContext';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
+import { logRoutineService } from '@/services/logService';
+import {
+  type RoutineResponse,
+  routineService,
+  type WorkoutResponse,
+  workoutService,
+} from '@/services/routineService';
 
 export default function StartRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,15 +28,15 @@ export default function StartRoutineScreen() {
   const [routine, setRoutine] = useState<RoutineResponse | null>(null);
   const [workouts, setWorkouts] = useState<WorkoutResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
+  const [_starting, setStarting] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [loadData]);
 
   const loadData = async () => {
     if (!id) return;
-    
+
     setLoading(true);
     try {
       const [routineData, workoutsData] = await Promise.all([
@@ -102,10 +116,10 @@ export default function StartRoutineScreen() {
 
         <View style={styles.workoutsSection}>
           <Text style={styles.sectionTitle}>Workout Plan ({workouts.length} workouts)</Text>
-          
+
           {workouts.map((workout, index) => (
-            <TouchableOpacity 
-              key={workout.id} 
+            <TouchableOpacity
+              key={workout.id}
               style={styles.workoutCard}
               onPress={() => handleStartWorkout(workout.id)}
             >
@@ -122,18 +136,19 @@ export default function StartRoutineScreen() {
                 </View>
                 <Ionicons name="play-circle" size={32} color="#34C759" />
               </View>
-              
+
               {workout.exercises && workout.exercises.length > 0 && (
                 <View style={styles.exercisesList}>
                   {workout.exercises.slice(0, 3).map((exercise, idx) => (
-                    <Text key={`${workout.id}-${exercise.exerciseId}-${idx}`} style={styles.exerciseItem}>
+                    <Text
+                      key={`${workout.id}-${exercise.exerciseId}-${idx}`}
+                      style={styles.exerciseItem}
+                    >
                       • {exercise.exerciseName}
                     </Text>
                   ))}
                   {workout.exercises.length > 3 && (
-                    <Text style={styles.moreExercises}>
-                      +{workout.exercises.length - 3} more
-                    </Text>
+                    <Text style={styles.moreExercises}>+{workout.exercises.length - 3} more</Text>
                   )}
                 </View>
               )}
@@ -146,7 +161,8 @@ export default function StartRoutineScreen() {
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>Ready to start?</Text>
             <Text style={styles.infoText}>
-              Tap on any workout above to start your session. Track your sets, reps, and weight for each exercise.
+              Tap on any workout above to start your session. Track your sets, reps, and weight for
+              each exercise.
             </Text>
           </View>
         </View>
@@ -216,12 +232,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...(Platform.OS === 'web' 
-
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' } 
-
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' }
       : {
-
           shadowColor: '#000',
 
           shadowOffset: { width: 0, height: 1 },
@@ -231,10 +244,7 @@ const styles = StyleSheet.create({
           shadowRadius: 2,
 
           elevation: 2,
-
-        }
-
-    ),
+        }),
   },
   workoutHeader: {
     flexDirection: 'row',

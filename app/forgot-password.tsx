@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { authService } from '@/services/authService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { authService } from '@/services/authService';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -51,7 +51,7 @@ export default function ForgotPasswordScreen() {
           },
         ]
       );
-    } catch (error: any) {
+    } catch (_error: any) {
       // For security, we show the same message even if email doesn't exist
       setEmailSent(true);
       Alert.alert(
@@ -74,15 +74,20 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={[
-        styles.scrollContainer,
-        layout.isWeb && styles.webScrollContainer
-      ]}>
-        <View style={[
-          styles.content, 
-          { paddingTop: insets.top + 40 },
-          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
-        ]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, layout.isWeb && styles.webScrollContainer]}
+      >
+        <View
+          style={[
+            styles.content,
+            { paddingTop: insets.top + 40 },
+            layout.isWeb && {
+              maxWidth: layout.formMaxWidth as any,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+        >
           <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
             Enter your email address and we'll send you a link to reset your password.
@@ -126,9 +131,7 @@ export default function ForgotPasswordScreen() {
             </View>
           ) : (
             <View style={styles.successContainer}>
-              <Text style={styles.successText}>
-                ✓ Check your email for the reset link
-              </Text>
+              <Text style={styles.successText}>✓ Check your email for the reset link</Text>
             </View>
           )}
         </View>

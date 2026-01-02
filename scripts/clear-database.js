@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 const SQLite = require('expo-sqlite');
-const path = require('path');
+const _path = require('node:path');
 
 async function clearDatabase() {
   try {
     console.log('Opening database...');
     const db = await SQLite.openDatabaseAsync('kraftlog.db');
-    
+
     console.log('Clearing all data...');
     await db.execAsync(`
       DELETE FROM log_sets;
@@ -22,7 +22,7 @@ async function clearDatabase() {
       DELETE FROM muscles;
       DELETE FROM sync_queue;
     `);
-    
+
     console.log('✅ Database cleared successfully!');
     await db.closeAsync();
   } catch (error) {

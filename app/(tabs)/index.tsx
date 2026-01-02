@@ -1,12 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
-  const { user, logout, isOfflineMode, useRemoteServer } = useAuth();
+  const { user, logout, useRemoteServer } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -32,7 +31,9 @@ export default function HomeScreen() {
             <Text style={styles.cardTitle}>Your Profile</Text>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Name:</Text>
-              <Text style={styles.value}>{user.name} {user.surname}</Text>
+              <Text style={styles.value}>
+                {user.name} {user.surname}
+              </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Email:</Text>
@@ -59,7 +60,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {!useRemoteServer && (
+        {!useRemoteServer && !user && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Offline Mode</Text>
             <Text style={styles.infoText}>
@@ -73,10 +74,7 @@ export default function HomeScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Quick Actions</Text>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => router.push('/history')}
-          >
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/history')}>
             <Text style={styles.actionButtonText}>📊 View Workout History</Text>
           </TouchableOpacity>
         </View>
@@ -122,16 +120,15 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 20,
     marginBottom: 20,
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
           elevation: 3,
-        }
-    ),
+        }),
   },
   cardTitle: {
     fontSize: 20,

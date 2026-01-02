@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 let db: any | null = null;
 let SQLite: any = null;
@@ -14,13 +14,13 @@ class WebDatabase {
 
   async init() {
     if (this.initialized) return;
-    
+
     // Load from AsyncStorage on web
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const kraftlogKeys = keys.filter(k => k.startsWith(WEB_STORAGE_PREFIX));
+      const kraftlogKeys = keys.filter((k) => k.startsWith(WEB_STORAGE_PREFIX));
       const items = await AsyncStorage.multiGet(kraftlogKeys);
-      
+
       items.forEach(([key, value]) => {
         if (value) {
           const tableName = key.replace(WEB_STORAGE_PREFIX, '');
@@ -30,7 +30,7 @@ class WebDatabase {
     } catch (error) {
       console.error('Failed to load web database:', error);
     }
-    
+
     this.initialized = true;
   }
 
@@ -55,7 +55,7 @@ class WebDatabase {
 
   async update(tableName: string, id: string, updates: any) {
     const table = this.getTable(tableName);
-    const index = table.findIndex(item => item.id === id);
+    const index = table.findIndex((item) => item.id === id);
     if (index !== -1) {
       table[index] = { ...table[index], ...updates };
       await this.saveTable(tableName);
@@ -66,7 +66,7 @@ class WebDatabase {
 
   async delete(tableName: string, id: string) {
     const table = this.getTable(tableName);
-    const index = table.findIndex(item => item.id === id);
+    const index = table.findIndex((item) => item.id === id);
     if (index !== -1) {
       table.splice(index, 1);
       await this.saveTable(tableName);
@@ -81,7 +81,7 @@ class WebDatabase {
 
   async findById(tableName: string, id: string): Promise<any | null> {
     const table = this.getTable(tableName);
-    return table.find(item => item.id === id) || null;
+    return table.find((item) => item.id === id) || null;
   }
 
   async findBy(tableName: string, predicate: (item: any) => boolean): Promise<any[]> {
@@ -97,9 +97,7 @@ class WebDatabase {
   async clearAll() {
     const keys = Array.from(this.data.keys());
     this.data.clear();
-    await Promise.all(
-      keys.map(key => AsyncStorage.removeItem(`${WEB_STORAGE_PREFIX}${key}`))
-    );
+    await Promise.all(keys.map((key) => AsyncStorage.removeItem(`${WEB_STORAGE_PREFIX}${key}`)));
   }
 }
 
@@ -115,17 +113,17 @@ export const initDatabase = async () => {
     }
     return webDb;
   }
-  
+
   // Dynamically import SQLite only on native platforms
   if (!SQLite) {
     SQLite = await import('expo-sqlite');
   }
-  
+
   if (db) return db;
-  
+
   try {
     db = await SQLite.openDatabaseAsync('kraftlog.db');
-  
+
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
     
@@ -295,10 +293,10 @@ export const initDatabase = async () => {
     CREATE INDEX IF NOT EXISTS idx_log_sets_log_exercise_id ON log_sets(log_exercise_id);
     CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id);
   `);
-  
+
     // Run migrations
     await runMigrations(db);
-  
+
     return db;
   } catch (error) {
     console.error('Failed to initialize database:', error);
@@ -313,7 +311,7 @@ export const getDatabase = async () => {
     }
     return webDb;
   }
-  
+
   if (!db) {
     return await initDatabase();
   }
@@ -325,7 +323,7 @@ export const closeDatabase = async () => {
     // Web database doesn't need closing - data is persisted to AsyncStorage
     return;
   }
-  
+
   if (db) {
     await db.closeAsync();
     db = null;
@@ -339,12 +337,12 @@ export const clearAllData = async () => {
     }
     return;
   }
-  
+
   const database = await getDatabase();
   if (!database) return;
-  
+
   console.log('Clearing all local data...');
-  
+
   try {
     // Clear all tables except migrations
     await database.execAsync(`
@@ -360,7 +358,7 @@ export const clearAllData = async () => {
       DELETE FROM muscles;
       DELETE FROM sync_queue;
     `);
-    
+
     console.log('All local data cleared successfully');
   } catch (error) {
     console.error('Failed to clear local data:', error);
@@ -402,10 +400,10 @@ const runMigrations = async (database: any) => {
         await database.execAsync('ALTER TABLE routines ADD COLUMN end_date TEXT');
       }
 
-      await database.runAsync(
-        'INSERT INTO migrations (version, applied_at) VALUES (?, ?)',
-        [1, new Date().toISOString()]
-      );
+      await database.runAsync('INSERT INTO migrations (version, applied_at) VALUES (?, ?)', [
+        1,
+        new Date().toISOString(),
+      ]);
       console.log('Migration 1 applied: Added routine activation fields');
     } catch (error) {
       console.error('Migration 1 failed:', error);

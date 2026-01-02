@@ -1,7 +1,6 @@
-import api from './api';
-import { isOfflineMode } from './api';
+import api, { isOfflineMode } from './api';
+import type { MuscleResponse } from './exerciseService';
 import { offlineRoutineService } from './offlineRoutineService';
-import { ExerciseResponse, MuscleResponse } from './exerciseService';
 
 export interface WorkoutExerciseResponse {
   exerciseId: string;

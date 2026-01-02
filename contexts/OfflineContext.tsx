@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { initDatabase } from '@/services/database';
-import { syncService, SyncStatus } from '@/services/syncService';
+import { type SyncStatus, syncService } from '@/services/syncService';
 import { useAuth } from './AuthContext';
 
 interface OfflineContextType {
@@ -51,18 +51,18 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         subscription.remove();
       }
     };
-  }, []);
+  }, [handleAppStateChange]);
 
   useEffect(() => {
     // Only sync when user logs in, database is initialized, AND using remote server
     if (user && isInitialized && useRemoteServer) {
       performInitialSync();
     }
-  }, [user, isInitialized, useRemoteServer]);
+  }, [user, isInitialized, useRemoteServer, performInitialSync]);
 
   const performInitialSync = async () => {
     if (!user || !useRemoteServer) return;
-    
+
     try {
       console.log('Performing initial sync...');
       // On web, only pull from server (no local database sync)

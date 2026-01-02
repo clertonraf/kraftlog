@@ -1,5 +1,5 @@
-import api from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from './api';
 
 export interface LoginRequest {
   email: string;
@@ -70,7 +70,7 @@ export const authService = {
     try {
       const response = await api.get('/auth/validate');
       return response.status === 200;
-    } catch (error) {
+    } catch (_error) {
       // If validation fails, clear the stored data
       await this.logout();
       return false;

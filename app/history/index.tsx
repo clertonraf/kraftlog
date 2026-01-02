@@ -1,10 +1,19 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { logRoutineService, LogRoutineResponse } from '@/services/logService';
-import { useAuth } from '@/contexts/AuthContext';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
+import { type LogRoutineResponse, logRoutineService } from '@/services/logService';
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -14,17 +23,19 @@ export default function HistoryScreen() {
 
   useEffect(() => {
     loadHistory();
-  }, [user?.id]);
+  }, [loadHistory]);
 
   const loadHistory = async () => {
     const userId = user?.id || 'offline-user';
-    
+
     setLoading(true);
     try {
       const data = await logRoutineService.getLogRoutinesByUserId(userId);
-      setLogRoutines(data.sort((a, b) => 
-        new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime()
-      ));
+      setLogRoutines(
+        data.sort(
+          (a, b) => new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime()
+        )
+      );
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || error.message || 'Failed to load history';
       if (Platform.OS === 'web') {
@@ -41,20 +52,16 @@ export default function HistoryScreen() {
     if (Platform.OS === 'web') {
       if (!confirm(`Are you sure you want to delete this workout from ${date}?`)) return;
     } else {
-      Alert.alert(
-        'Delete Workout',
-        `Are you sure you want to delete this workout from ${date}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              await deleteWorkout(logRoutineId);
-            },
+      Alert.alert('Delete Workout', `Are you sure you want to delete this workout from ${date}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteWorkout(logRoutineId);
           },
-        ]
-      );
+        },
+      ]);
       return;
     }
     await deleteWorkout(logRoutineId);
@@ -63,7 +70,7 @@ export default function HistoryScreen() {
   const deleteWorkout = async (logRoutineId: string) => {
     try {
       await logRoutineService.deleteLogRoutine(logRoutineId);
-      setLogRoutines(prev => prev.filter(log => log.id !== logRoutineId));
+      setLogRoutines((prev) => prev.filter((log) => log.id !== logRoutineId));
       if (Platform.OS === 'web') {
         alert('Workout deleted successfully');
       } else {
@@ -81,22 +88,22 @@ export default function HistoryScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   };
 
   const formatDuration = (startDate: string, endDate?: string) => {
     if (!endDate) return 'In progress';
-    
+
     const start = new Date(startDate).getTime();
     const end = new Date(endDate).getTime();
     const durationMs = end - start;
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -126,9 +133,7 @@ export default function HistoryScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={80} color="#999" />
             <Text style={styles.emptyTitle}>No Workout History</Text>
-            <Text style={styles.emptyText}>
-              Start logging your workouts to see them here
-            </Text>
+            <Text style={styles.emptyText}>Start logging your workouts to see them here</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -142,11 +147,12 @@ export default function HistoryScreen() {
                   <View style={styles.logInfo}>
                     <Text style={styles.logDate}>{formatDate(logRoutine.startDatetime)}</Text>
                     <Text style={styles.logWorkouts}>
-                      {logRoutine.logWorkouts?.length || 0} workout{logRoutine.logWorkouts?.length !== 1 ? 's' : ''}
+                      {logRoutine.logWorkouts?.length || 0} workout
+                      {logRoutine.logWorkouts?.length !== 1 ? 's' : ''}
                     </Text>
                   </View>
                   <View style={styles.logMeta}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={(e) => {
                         e.stopPropagation();
@@ -157,7 +163,7 @@ export default function HistoryScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                
+
                 <View style={styles.logMetaRow}>
                   <Text style={styles.logDuration}>
                     {formatDuration(logRoutine.startDatetime, logRoutine.endDatetime)}
@@ -169,10 +175,10 @@ export default function HistoryScreen() {
                     </View>
                   )}
                 </View>
-                
+
                 {logRoutine.logWorkouts && logRoutine.logWorkouts.length > 0 && (
                   <View style={styles.workoutsList}>
-                    {logRoutine.logWorkouts.map((workout, idx) => (
+                    {logRoutine.logWorkouts.map((workout, _idx) => (
                       <View key={workout.id} style={styles.workoutItem}>
                         <Ionicons name="barbell" size={16} color="#666" />
                         <Text style={styles.workoutText}>
@@ -182,7 +188,7 @@ export default function HistoryScreen() {
                     ))}
                   </View>
                 )}
-                
+
                 <View style={styles.logFooter}>
                   <Ionicons name="chevron-forward" size={20} color="#007AFF" />
                 </View>
@@ -252,16 +258,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.1,
           shadowRadius: 2,
           elevation: 2,
-        }
-    ),
+        }),
   },
   logHeader: {
     flexDirection: 'row',

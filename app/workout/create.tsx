@@ -1,11 +1,23 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform, Alert, ActivityIndicator, FlatList, Modal } from 'react-native';
-import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { workoutService } from '@/services/routineService';
-import { exerciseService, ExerciseResponse } from '@/services/exerciseService';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WorkoutExerciseRequest } from '@/types/routine';
+import { type ExerciseResponse, exerciseService } from '@/services/exerciseService';
+import { workoutService } from '@/services/routineService';
+import type { WorkoutExerciseRequest } from '@/types/routine';
 
 const TRAINING_TECHNIQUES = [
   'None',
@@ -27,7 +39,7 @@ export default function CreateWorkoutScreen() {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [loadingExercises, setLoadingExercises] = useState(true);
-  
+
   const [name, setName] = useState('');
   const [orderIndex, setOrderIndex] = useState('1');
   const [intervalMinutes, setIntervalMinutes] = useState('');
@@ -44,13 +56,13 @@ export default function CreateWorkoutScreen() {
 
   useEffect(() => {
     loadExercises();
-  }, []);
+  }, [loadExercises]);
 
   useEffect(() => {
     if (id && allExercises.length > 0) {
       loadWorkout();
     }
-  }, [id, allExercises]);
+  }, [id, allExercises, loadWorkout]);
 
   const loadExercises = async () => {
     try {
@@ -65,16 +77,16 @@ export default function CreateWorkoutScreen() {
 
   const loadWorkout = async () => {
     if (!id) return;
-    
+
     try {
       const workout = await workoutService.getWorkoutById(id);
       setName(workout.name);
       setOrderIndex(workout.orderIndex?.toString() || '1');
       setIntervalMinutes(workout.intervalMinutes?.toString() || '');
-      
+
       if (workout.exercises) {
         const exercises: WorkoutExerciseWithDetails[] = workout.exercises.map((we, index) => {
-          const exercise = allExercises.find(e => e.id === we.exerciseId);
+          const exercise = allExercises.find((e) => e.id === we.exerciseId);
           return {
             exerciseId: we.exerciseId,
             recommendedSets: we.recommendedSets,
@@ -91,9 +103,10 @@ export default function CreateWorkoutScreen() {
     }
   };
 
-  const filteredExercises = allExercises.filter(exercise =>
-    exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    !workoutExercises.some(we => we.exerciseId === exercise.id)
+  const filteredExercises = allExercises.filter(
+    (exercise) =>
+      exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !workoutExercises.some((we) => we.exerciseId === exercise.id)
   );
 
   const handleSave = async () => {
@@ -123,14 +136,17 @@ export default function CreateWorkoutScreen() {
         exerciseId: we.exerciseId,
         recommendedSets: we.recommendedSets,
         recommendedReps: we.recommendedReps,
-        trainingTechnique: we.trainingTechnique && we.trainingTechnique !== 'None' ? we.trainingTechnique : undefined,
+        trainingTechnique:
+          we.trainingTechnique && we.trainingTechnique !== 'None'
+            ? we.trainingTechnique
+            : undefined,
         orderIndex: index,
       }));
 
       const data = {
         name: name.trim(),
-        orderIndex: parseInt(orderIndex) || 1,
-        intervalMinutes: intervalMinutes ? parseInt(intervalMinutes) : undefined,
+        orderIndex: parseInt(orderIndex, 10) || 1,
+        intervalMinutes: intervalMinutes ? parseInt(intervalMinutes, 10) : undefined,
         routineId,
         exercises,
       };
@@ -163,7 +179,7 @@ export default function CreateWorkoutScreen() {
       orderIndex: workoutExercises.length,
       exercise,
     };
-    setWorkoutExercises(prev => [...prev, newExercise]);
+    setWorkoutExercises((prev) => [...prev, newExercise]);
     setShowExercisePicker(false);
   };
 
@@ -180,22 +196,23 @@ export default function CreateWorkoutScreen() {
         description: newExerciseDescription.trim() || undefined,
         videoUrl: newExerciseVideoUrl.trim() || undefined,
       });
-      
+
       // Reload exercises to include the new one
       await loadExercises();
-      
+
       // Add the new exercise to the workout
       addExercise(newExercise);
-      
+
       // Reset form and close modal
       setNewExerciseName('');
       setNewExerciseDescription('');
       setNewExerciseVideoUrl('');
       setShowCreateExercise(false);
-      
+
       Alert.alert('Success', 'Exercise created and added to workout');
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to create exercise';
+      const errorMsg =
+        error.response?.data?.message || error.message || 'Failed to create exercise';
       Alert.alert('Error', errorMsg);
     } finally {
       setCreatingExercise(false);
@@ -203,26 +220,29 @@ export default function CreateWorkoutScreen() {
   };
 
   const removeExercise = (exerciseId: string) => {
-    setWorkoutExercises(prev => prev.filter(we => we.exerciseId !== exerciseId));
+    setWorkoutExercises((prev) => prev.filter((we) => we.exerciseId !== exerciseId));
   };
 
   const updateExerciseDetails = (exerciseId: string, updates: Partial<WorkoutExerciseRequest>) => {
-    setWorkoutExercises(prev => prev.map(we =>
-      we.exerciseId === exerciseId ? { ...we, ...updates } : we
-    ));
+    setWorkoutExercises((prev) =>
+      prev.map((we) => (we.exerciseId === exerciseId ? { ...we, ...updates } : we))
+    );
   };
 
   const renderExercisePickerItem = ({ item }: { item: ExerciseResponse }) => (
-    <TouchableOpacity
-      style={styles.exercisePickerItem}
-      onPress={() => addExercise(item)}
-    >
+    <TouchableOpacity style={styles.exercisePickerItem} onPress={() => addExercise(item)}>
       <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
       <Text style={styles.exercisePickerName}>{item.name}</Text>
     </TouchableOpacity>
   );
 
-  const renderWorkoutExercise = ({ item, index }: { item: WorkoutExerciseWithDetails; index: number }) => (
+  const renderWorkoutExercise = ({
+    item,
+    index,
+  }: {
+    item: WorkoutExerciseWithDetails;
+    index: number;
+  }) => (
     <View style={styles.workoutExerciseCard}>
       <View style={styles.workoutExerciseHeader}>
         <View style={styles.exerciseOrderBadge}>
@@ -240,7 +260,11 @@ export default function CreateWorkoutScreen() {
           <TextInput
             style={styles.smallInput}
             value={item.recommendedSets?.toString() || ''}
-            onChangeText={(text) => updateExerciseDetails(item.exerciseId, { recommendedSets: parseInt(text) || undefined })}
+            onChangeText={(text) =>
+              updateExerciseDetails(item.exerciseId, {
+                recommendedSets: parseInt(text, 10) || undefined,
+              })
+            }
             keyboardType="number-pad"
             placeholder="3"
           />
@@ -251,16 +275,17 @@ export default function CreateWorkoutScreen() {
           <TextInput
             style={styles.smallInput}
             value={item.recommendedReps?.toString() || ''}
-            onChangeText={(text) => updateExerciseDetails(item.exerciseId, { recommendedReps: parseInt(text) || undefined })}
+            onChangeText={(text) =>
+              updateExerciseDetails(item.exerciseId, {
+                recommendedReps: parseInt(text, 10) || undefined,
+              })
+            }
             keyboardType="number-pad"
             placeholder="10"
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.techniqueButton}
-          onPress={() => setEditingExercise(item)}
-        >
+        <TouchableOpacity style={styles.techniqueButton} onPress={() => setEditingExercise(item)}>
           <Text style={styles.techniqueButtonLabel}>Technique</Text>
           <Text style={styles.techniqueButtonValue} numberOfLines={1}>
             {item.trainingTechnique || 'None'}
@@ -327,10 +352,7 @@ export default function CreateWorkoutScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.label}>Exercises ({workoutExercises.length})</Text>
-            <TouchableOpacity
-              onPress={() => setShowExercisePicker(true)}
-              style={styles.addButton}
-            >
+            <TouchableOpacity onPress={() => setShowExercisePicker(true)} style={styles.addButton}>
               <Ionicons name="add" size={20} color="#FFF" />
               <Text style={styles.addButtonText}>Add Exercise</Text>
             </TouchableOpacity>
@@ -350,21 +372,19 @@ export default function CreateWorkoutScreen() {
       </ScrollView>
 
       {/* Exercise Picker Modal */}
-      <Modal
-        visible={showExercisePicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showExercisePicker} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowExercisePicker(false)}>
               <Text style={styles.modalCancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Exercise</Text>
-            <TouchableOpacity onPress={() => {
-              setShowExercisePicker(false);
-              setShowCreateExercise(true);
-            }}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowExercisePicker(false);
+                setShowCreateExercise(true);
+              }}
+            >
               <Ionicons name="add-circle" size={24} color="#007AFF" />
             </TouchableOpacity>
           </View>
@@ -393,7 +413,7 @@ export default function CreateWorkoutScreen() {
               ListEmptyComponent={
                 <View style={styles.emptyExerciseList}>
                   <Text style={styles.emptyExerciseText}>No exercises found</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.createNewButton}
                     onPress={() => {
                       setShowExercisePicker(false);
@@ -411,11 +431,7 @@ export default function CreateWorkoutScreen() {
       </Modal>
 
       {/* Technique Picker Modal */}
-      <Modal
-        visible={editingExercise !== null}
-        animationType="slide"
-        transparent
-      >
+      <Modal visible={editingExercise !== null} animationType="slide" transparent>
         <View style={styles.techniqueModalOverlay}>
           <View style={styles.techniqueModalContent}>
             <Text style={styles.techniqueModalTitle}>Select Training Technique</Text>
@@ -425,19 +441,25 @@ export default function CreateWorkoutScreen() {
                   key={technique}
                   style={[
                     styles.techniqueOption,
-                    editingExercise?.trainingTechnique === technique && styles.techniqueOptionSelected
+                    editingExercise?.trainingTechnique === technique &&
+                      styles.techniqueOptionSelected,
                   ]}
                   onPress={() => {
                     if (editingExercise) {
-                      updateExerciseDetails(editingExercise.exerciseId, { trainingTechnique: technique });
+                      updateExerciseDetails(editingExercise.exerciseId, {
+                        trainingTechnique: technique,
+                      });
                       setEditingExercise(null);
                     }
                   }}
                 >
-                  <Text style={[
-                    styles.techniqueOptionText,
-                    editingExercise?.trainingTechnique === technique && styles.techniqueOptionTextSelected
-                  ]}>
+                  <Text
+                    style={[
+                      styles.techniqueOptionText,
+                      editingExercise?.trainingTechnique === technique &&
+                        styles.techniqueOptionTextSelected,
+                    ]}
+                  >
                     {technique}
                   </Text>
                   {editingExercise?.trainingTechnique === technique && (
@@ -457,19 +479,17 @@ export default function CreateWorkoutScreen() {
       </Modal>
 
       {/* Create Exercise Modal */}
-      <Modal
-        visible={showCreateExercise}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showCreateExercise} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => {
-              setShowCreateExercise(false);
-              setNewExerciseName('');
-              setNewExerciseDescription('');
-              setNewExerciseVideoUrl('');
-            }}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowCreateExercise(false);
+                setNewExerciseName('');
+                setNewExerciseDescription('');
+                setNewExerciseVideoUrl('');
+              }}
+            >
               <Text style={styles.modalCancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Create Exercise</Text>
@@ -704,6 +724,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#000',
+  },
+  modalContent: {
+    flex: 1,
   },
   searchContainer: {
     flexDirection: 'row',

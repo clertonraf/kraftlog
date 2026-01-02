@@ -1,6 +1,6 @@
+import { useRootNavigationState, useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { useRouter, useRootNavigationState } from 'expo-router';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { configService } from '@/services/configService';
 
@@ -13,11 +13,11 @@ export default function Index() {
     if (!rootNavigationState?.key || loading) return;
 
     checkAndRedirect();
-  }, [isAuthenticated, loading, rootNavigationState?.key]);
+  }, [loading, rootNavigationState?.key, checkAndRedirect]);
 
   const checkAndRedirect = async () => {
     const isConfigured = await configService.isConfigured();
-    
+
     if (!isConfigured) {
       router.replace('/server-config');
     } else if (useRemoteServer && isAuthenticated) {

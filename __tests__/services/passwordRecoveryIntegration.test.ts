@@ -11,7 +11,7 @@ describe('authService - Password Recovery Integration', () => {
     });
 
     it('should accept email parameter', () => {
-      const email = 'test@example.com';
+      const _email = 'test@example.com';
       // Just verify the function can be called - actual API call would require backend
       expect(() => {
         const params = authService.requestPasswordRecovery.length;

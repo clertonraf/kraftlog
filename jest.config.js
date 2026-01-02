@@ -14,16 +14,10 @@ module.exports = {
     '!**/node_modules/**',
     '!**/__tests__/**',
   ],
-  testMatch: [
-    '**/__tests__/**/*.test.[jt]s?(x)',
-  ],
+  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^react-native$': '<rootDir>/node_modules/react-native',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };
-
-
-
-

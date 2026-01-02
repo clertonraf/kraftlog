@@ -1,18 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { exerciseService, ExerciseResponse, ExerciseUpdateRequest, MuscleResponse, MuscleGroup, EquipmentType } from '@/services/exerciseService';
+import {
+  type ExerciseResponse,
+  type ExerciseUpdateRequest,
+  exerciseService,
+  type MuscleGroup,
+  type MuscleResponse,
+} from '@/services/exerciseService';
 
 interface EditExerciseModalProps {
   visible: boolean;
@@ -23,7 +29,14 @@ interface EditExerciseModalProps {
   isCreating?: boolean;
 }
 
-export default function EditExerciseModal({ visible, exercise, muscles, onClose, onSave, isCreating = false }: EditExerciseModalProps) {
+export default function EditExerciseModal({
+  visible,
+  exercise,
+  muscles,
+  onClose,
+  onSave,
+  isCreating = false,
+}: EditExerciseModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [sets, setSets] = useState('');
@@ -42,15 +55,13 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
       setRepetitions(exercise.repetitions?.toString() || '');
       setDefaultWeight(exercise.defaultWeightKg?.toString() || '');
       setVideoUrl(exercise.videoUrl || '');
-      setSelectedMuscleIds(exercise.muscles.map(m => m.id));
+      setSelectedMuscleIds(exercise.muscles.map((m) => m.id));
     }
   }, [exercise]);
 
   const toggleMuscle = (muscleId: string) => {
-    setSelectedMuscleIds(prev =>
-      prev.includes(muscleId)
-        ? prev.filter(id => id !== muscleId)
-        : [...prev, muscleId]
+    setSelectedMuscleIds((prev) =>
+      prev.includes(muscleId) ? prev.filter((id) => id !== muscleId) : [...prev, muscleId]
     );
   };
 
@@ -70,8 +81,8 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
       const updateData: ExerciseUpdateRequest = {
         name: name.trim(),
         description: description.trim() || undefined,
-        sets: sets ? parseInt(sets) : undefined,
-        repetitions: repetitions ? parseInt(repetitions) : undefined,
+        sets: sets ? parseInt(sets, 10) : undefined,
+        repetitions: repetitions ? parseInt(repetitions, 10) : undefined,
         defaultWeightKg: defaultWeight ? parseFloat(defaultWeight) : undefined,
         videoUrl: videoUrl.trim() || undefined,
         muscleIds: selectedMuscleIds.length > 0 ? selectedMuscleIds : undefined,
@@ -92,11 +103,14 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
           Alert.alert('Success', 'Exercise updated successfully');
         }
       }
-      
+
       onSave();
       onClose();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || `Failed to ${isCreating ? 'create' : 'update'} exercise`;
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        `Failed to ${isCreating ? 'create' : 'update'} exercise`;
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -107,18 +121,21 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
     }
   };
 
-  const musclesByGroup = muscles.reduce((acc, muscle) => {
-    if (!acc[muscle.muscleGroup]) {
-      acc[muscle.muscleGroup] = [];
-    }
-    acc[muscle.muscleGroup].push(muscle);
-    return acc;
-  }, {} as Record<MuscleGroup, MuscleResponse[]>);
+  const musclesByGroup = muscles.reduce(
+    (acc, muscle) => {
+      if (!acc[muscle.muscleGroup]) {
+        acc[muscle.muscleGroup] = [];
+      }
+      acc[muscle.muscleGroup].push(muscle);
+      return acc;
+    },
+    {} as Record<MuscleGroup, MuscleResponse[]>
+  );
 
   return (
-    <Modal 
-      visible={visible} 
-      animationType="slide" 
+    <Modal
+      visible={visible}
+      animationType="slide"
       onRequestClose={onClose}
       presentationStyle="pageSheet"
     >
@@ -204,7 +221,7 @@ export default function EditExerciseModal({ visible, exercise, muscles, onClose,
             <View key={group} style={styles.muscleGroupSection}>
               <Text style={styles.muscleGroupTitle}>{group}</Text>
               <View style={styles.muscleList}>
-                {groupMuscles.map(muscle => (
+                {groupMuscles.map((muscle) => (
                   <TouchableOpacity
                     key={muscle.id}
                     style={[

@@ -1,28 +1,72 @@
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { configService } from '@/services/configService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { configService } from '@/services/configService';
 
 export default function ServerConfigScreen() {
   const [apiUrl, setApiUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isReconfiguring, setIsReconfiguring] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
 
+  useEffect(() => {
+    loadCurrentConfig();
+  }, [loadCurrentConfig]);
+
+  const loadCurrentConfig = async () => {
+    const config = await configService.getConfig();
+    if (config.isConfigured) {
+      setIsReconfiguring(true);
+      if (config.apiUrl) {
+        setApiUrl(config.apiUrl);
+      }
+    }
+  };
+
   const handleOfflineMode = async () => {
+    if (isReconfiguring) {
+      Alert.alert(
+        'Switch to Offline Mode',
+        'Are you sure you want to switch to offline mode? You will need to login again to use remote server features.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Switch',
+            style: 'destructive',
+            onPress: async () => {
+              setLoading(true);
+              try {
+                await configService.setOfflineMode();
+                // Clear auth data
+                const { authService } = await import('@/services/authService');
+                await authService.logout();
+                router.replace('/(tabs)');
+              } catch (_error) {
+                Alert.alert('Error', 'Failed to switch to offline mode');
+              } finally {
+                setLoading(false);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await configService.setOfflineMode();
@@ -36,7 +80,7 @@ export default function ServerConfigScreen() {
           },
         ]
       );
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Failed to configure offline mode');
     } finally {
       setLoading(false);
@@ -52,7 +96,7 @@ export default function ServerConfigScreen() {
     // Basic URL validation
     try {
       new URL(apiUrl);
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Please enter a valid URL (e.g., http://192.168.1.100:8080/api)');
       return;
     }
@@ -60,17 +104,30 @@ export default function ServerConfigScreen() {
     setLoading(true);
     try {
       await configService.setRemoteServer(apiUrl.trim());
-      Alert.alert(
-        'Remote Server',
-        'Server configured successfully. You can now login to sync your data.',
-        [
+
+      if (isReconfiguring) {
+        // If reconfiguring, clear auth and go to login
+        const { authService } = await import('@/services/authService');
+        await authService.logout();
+        Alert.alert('Server Updated', 'Server URL has been updated. Please login again.', [
           {
             text: 'OK',
             onPress: () => router.replace('/login'),
           },
-        ]
-      );
-    } catch (error) {
+        ]);
+      } else {
+        Alert.alert(
+          'Remote Server',
+          'Server configured successfully. You can now login to sync your data.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/login'),
+            },
+          ]
+        );
+      }
+    } catch (_error) {
       Alert.alert('Error', 'Failed to configure server');
     } finally {
       setLoading(false);
@@ -82,18 +139,27 @@ export default function ServerConfigScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={[
-        styles.scrollContainer,
-        layout.isWeb && styles.webScrollContainer
-      ]}>
-        <View style={[
-          styles.content, 
-          { paddingTop: insets.top + 40 },
-          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
-        ]}>
-          <Text style={styles.title}>Welcome to KraftLog</Text>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, layout.isWeb && styles.webScrollContainer]}
+      >
+        <View
+          style={[
+            styles.content,
+            { paddingTop: insets.top + 40 },
+            layout.isWeb && {
+              maxWidth: layout.formMaxWidth as any,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+        >
+          <Text style={styles.title}>
+            {isReconfiguring ? 'Server Settings' : 'Welcome to KraftLog'}
+          </Text>
           <Text style={styles.subtitle}>
-            Choose how you want to use the app
+            {isReconfiguring
+              ? 'Update your connection settings'
+              : 'Choose how you want to use the app'}
           </Text>
 
           {Platform.OS !== 'web' && (
@@ -124,9 +190,12 @@ export default function ServerConfigScreen() {
           <View style={styles.optionContainer}>
             <Text style={styles.optionTitle}>☁️ Remote Server</Text>
             <Text style={styles.optionDescription}>
-              Connect to a server to sync your data across devices. {Platform.OS === 'web' ? 'Server connection is required for web version.' : "You'll need to login or register."}
+              Connect to a server to sync your data across devices.{' '}
+              {Platform.OS === 'web'
+                ? 'Server connection is required for web version.'
+                : "You'll need to login or register."}
             </Text>
-            
+
             <TextInput
               style={styles.input}
               placeholder="Server URL (e.g., http://192.168.1.100:8080/api)"
@@ -149,10 +218,19 @@ export default function ServerConfigScreen() {
             </TouchableOpacity>
           </View>
 
-          {Platform.OS !== 'web' && (
+          {Platform.OS !== 'web' && !isReconfiguring && (
             <Text style={styles.footerText}>
               You can change this setting later in the app settings.
             </Text>
+          )}
+          {isReconfiguring && (
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={() => router.back()}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
           )}
           {Platform.OS === 'web' && (
             <Text style={styles.footerText}>
@@ -264,5 +342,9 @@ const styles = StyleSheet.create({
     minHeight: '100%',
     justifyContent: 'center',
     paddingHorizontal: 40,
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
+    marginTop: 10,
   },
 });

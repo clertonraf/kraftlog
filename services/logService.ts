@@ -1,5 +1,4 @@
-import api from './api';
-import { isOfflineMode } from './api';
+import api, { isOfflineMode } from './api';
 import { getDatabase } from './database';
 
 export interface LogSetResponse {
@@ -96,38 +95,50 @@ export const logRoutineService = {
       // Return data from local database
       const db = await getDatabase();
       if (!db) return [];
-      
+
       try {
-        const logRoutines = await db.getAllAsync<any>(`
+        const logRoutines = (await db.getAllAsync(
+          `
           SELECT * FROM log_routines 
           WHERE user_id = ? 
           ORDER BY start_datetime DESC
-        `, [userId]);
-        
+        `,
+          [userId]
+        )) as any[];
+
         // Get workouts for each log routine
         const result = await Promise.all(
-          logRoutines.map(async (logRoutine) => {
-            const logWorkouts = await db.getAllAsync<any>(`
+          logRoutines.map(async (logRoutine: any) => {
+            const logWorkouts = (await db.getAllAsync(
+              `
               SELECT * FROM log_workouts 
               WHERE log_routine_id = ?
-            `, [logRoutine.id]);
-            
+            `,
+              [logRoutine.id]
+            )) as any[];
+
             // Get exercises for each workout
             for (const workout of logWorkouts) {
-              const logExercises = await db.getAllAsync<any>(`
+              const logExercises = (await db.getAllAsync(
+                `
                 SELECT * FROM log_exercises 
                 WHERE log_workout_id = ?
-              `, [workout.id]);
-              
+              `,
+                [workout.id]
+              )) as any[];
+
               // Get sets for each exercise
               for (const exercise of logExercises) {
-                const logSets = await db.getAllAsync<any>(`
+                const logSets = (await db.getAllAsync(
+                  `
                   SELECT * FROM log_sets 
                   WHERE log_exercise_id = ?
                   ORDER BY set_number
-                `, [exercise.id]);
-                
-                exercise.logSets = logSets.map(set => ({
+                `,
+                  [exercise.id]
+                )) as any[];
+
+                exercise.logSets = logSets.map((set: any) => ({
                   id: set.id,
                   logExerciseId: set.log_exercise_id,
                   setNumber: set.set_number,
@@ -138,8 +149,8 @@ export const logRoutineService = {
                   notes: set.notes,
                 }));
               }
-              
-              workout.logExercises = logExercises.map(ex => ({
+
+              workout.logExercises = logExercises.map((ex: any) => ({
                 id: ex.id,
                 logWorkoutId: ex.log_workout_id,
                 exerciseId: ex.exercise_id,
@@ -152,14 +163,14 @@ export const logRoutineService = {
                 logSets: ex.logSets,
               }));
             }
-            
+
             return {
               id: logRoutine.id,
               routineId: logRoutine.routine_id,
               userId: logRoutine.user_id,
               startDatetime: logRoutine.start_datetime,
               endDatetime: logRoutine.end_datetime,
-              logWorkouts: logWorkouts.map(w => ({
+              logWorkouts: logWorkouts.map((w: any) => ({
                 id: w.id,
                 logRoutineId: w.log_routine_id,
                 workoutId: w.workout_id,
@@ -170,14 +181,14 @@ export const logRoutineService = {
             };
           })
         );
-        
+
         return result;
       } catch (error) {
         console.error('Error loading log routines from local database:', error);
         return [];
       }
     }
-    
+
     const response = await api.get<LogRoutineResponse[]>(`/log-routines/user/${userId}`);
     return response.data;
   },
@@ -191,7 +202,10 @@ export const logRoutineService = {
     return response.data;
   },
 
-  async updateLogRoutine(id: string, data: Partial<LogRoutineCreateRequest>): Promise<LogRoutineResponse> {
+  async updateLogRoutine(
+    id: string,
+    data: Partial<LogRoutineCreateRequest>
+  ): Promise<LogRoutineResponse> {
     const response = await api.put<LogRoutineResponse>(`/log-routines/${id}`, data);
     return response.data;
   },
@@ -200,12 +214,12 @@ export const logRoutineService = {
     if (await isOfflineMode()) {
       const db = await getDatabase();
       if (!db) throw new Error('Database not available');
-      
+
       // Delete cascade will handle related records
       await db.runAsync('DELETE FROM log_routines WHERE id = ?', [id]);
       return;
     }
-    
+
     await api.delete(`/log-routines/${id}`);
   },
 
@@ -213,7 +227,7 @@ export const logRoutineService = {
     // First fetch the current log routine to get required fields
     const logRoutine = await api.get<LogRoutineResponse>(`/log-routines/${id}`);
     const now = new Date().toISOString();
-    
+
     // Update with all required fields
     const response = await api.put<LogRoutineResponse>(`/log-routines/${id}`, {
       routineId: logRoutine.data.routineId,
@@ -235,7 +249,10 @@ export const logWorkoutService = {
     return response.data;
   },
 
-  async updateLogWorkout(id: string, data: Partial<LogWorkoutCreateRequest>): Promise<LogWorkoutResponse> {
+  async updateLogWorkout(
+    id: string,
+    data: Partial<LogWorkoutCreateRequest>
+  ): Promise<LogWorkoutResponse> {
     const response = await api.put<LogWorkoutResponse>(`/log-workouts/${id}`, data);
     return response.data;
   },
@@ -274,7 +291,10 @@ export const logExerciseService = {
     return response.data;
   },
 
-  async updateLogExercise(id: string, data: Partial<LogExerciseCreateRequest>): Promise<LogExerciseResponse> {
+  async updateLogExercise(
+    id: string,
+    data: Partial<LogExerciseCreateRequest>
+  ): Promise<LogExerciseResponse> {
     const response = await api.put<LogExerciseResponse>(`/log-exercises/${id}`, data);
     return response.data;
   },
@@ -284,9 +304,9 @@ export const logExerciseService = {
   },
 
   async completeLogExercise(id: string): Promise<LogExerciseResponse> {
-    const response = await api.put<LogExerciseResponse>(`/log-exercises/${id}`, { 
+    const response = await api.put<LogExerciseResponse>(`/log-exercises/${id}`, {
       completed: true,
-      endDatetime: new Date().toISOString()
+      endDatetime: new Date().toISOString(),
     });
     return response.data;
   },

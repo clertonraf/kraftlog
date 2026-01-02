@@ -1,6 +1,6 @@
-import { getDatabase } from './database';
-import api from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from './api';
+import { getDatabase } from './database';
 
 export interface SyncStatus {
   lastSync: string | null;
@@ -16,17 +16,19 @@ class SyncService {
   subscribe(callback: (status: SyncStatus) => void) {
     this.syncCallbacks.push(callback);
     return () => {
-      this.syncCallbacks = this.syncCallbacks.filter(cb => cb !== callback);
+      this.syncCallbacks = this.syncCallbacks.filter((cb) => cb !== callback);
     };
   }
 
   private notifySubscribers(status: SyncStatus) {
-    this.syncCallbacks.forEach(callback => callback(status));
+    this.syncCallbacks.forEach((callback) => {
+      callback(status);
+    });
   }
 
   async getSyncStatus(): Promise<SyncStatus> {
     const db = await getDatabase();
-    
+
     // On web, database is not available
     if (!db) {
       const lastSync = await AsyncStorage.getItem('lastSync');
@@ -36,12 +38,12 @@ class SyncService {
         pendingChanges: 0,
       };
     }
-    
-    const result = await db.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM sync_queue'
-    );
+
+    const result = (await db.getFirstAsync('SELECT COUNT(*) as count FROM sync_queue')) as {
+      count: number;
+    } | null;
     const lastSync = await AsyncStorage.getItem('lastSync');
-    
+
     return {
       lastSync,
       isSyncing: this.isSyncing,
@@ -55,7 +57,7 @@ class SyncService {
       console.warn('Database not available on web platform');
       return;
     }
-    
+
     await db.runAsync(
       `INSERT INTO sync_queue (entity_type, entity_id, operation, data, created_at)
        VALUES (?, ?, ?, ?, ?)`,
@@ -113,11 +115,11 @@ class SyncService {
       const testUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api';
       const response = await fetch(`${testUrl}/exercises`, {
         method: 'HEAD',
-        signal: AbortSignal.timeout(3000)
+        signal: AbortSignal.timeout(3000),
       });
       // Consider online if we get any response (including 401/403 which means server is up)
       return response.ok || response.status === 401 || response.status === 403;
-    } catch (error: any) {
+    } catch (_error: any) {
       // Consider device offline only on network errors
       console.log('Device is offline, skipping sync');
       return false;
@@ -133,20 +135,22 @@ class SyncService {
   private async processSyncQueue() {
     const db = await getDatabase();
     if (!db) return; // Skip on web
-    
-    const queue = await db.getAllAsync<{
+
+    const queue = (await db.getAllAsync(
+      'SELECT * FROM sync_queue ORDER BY created_at ASC LIMIT 50'
+    )) as {
       id: number;
       entity_type: string;
       entity_id: string;
       operation: string;
       data: string;
       retry_count: number;
-    }>('SELECT * FROM sync_queue ORDER BY created_at ASC LIMIT 50');
+    }[];
 
     for (const item of queue) {
       try {
         const data = JSON.parse(item.data);
-        
+
         switch (item.operation) {
           case 'CREATE':
             await this.syncCreate(item.entity_type, data);
@@ -163,13 +167,12 @@ class SyncService {
         await db.runAsync('DELETE FROM sync_queue WHERE id = ?', [item.id]);
       } catch (error) {
         console.error(`Failed to sync ${item.entity_type} ${item.entity_id}:`, error);
-        
+
         // Increment retry count
         if (item.retry_count < 5) {
-          await db.runAsync(
-            'UPDATE sync_queue SET retry_count = retry_count + 1 WHERE id = ?',
-            [item.id]
-          );
+          await db.runAsync('UPDATE sync_queue SET retry_count = retry_count + 1 WHERE id = ?', [
+            item.id,
+          ]);
         } else {
           // Remove after too many retries
           console.warn(`Removing ${item.entity_type} ${item.entity_id} from queue after 5 retries`);
@@ -214,7 +217,7 @@ class SyncService {
   async pullFromServer(userId: string) {
     try {
       console.log('Pulling data from server...');
-      
+
       // Pull routines
       const routines = await api.get(`/routines/user/${userId}`);
       await this.saveRoutinesToLocal(routines.data);
@@ -237,13 +240,19 @@ class SyncService {
   private async saveRoutinesToLocal(routines: any[]) {
     const db = await getDatabase();
     if (!db) return; // Skip on web
-    
+
     for (const routine of routines) {
       await db.runAsync(
         `INSERT OR REPLACE INTO routines (id, user_id, name, description, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [routine.id, routine.userId, routine.name, routine.description, 
-         routine.createdAt, routine.updatedAt]
+        [
+          routine.id,
+          routine.userId,
+          routine.name,
+          routine.description,
+          routine.createdAt,
+          routine.updatedAt,
+        ]
       );
 
       // Save workouts
@@ -252,8 +261,15 @@ class SyncService {
           await db.runAsync(
             `INSERT OR REPLACE INTO workouts (id, routine_id, name, description, day_of_week, created_at, updated_at, synced)
              VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-            [workout.id, routine.id, workout.name, workout.description, 
-             workout.dayOfWeek, workout.createdAt, workout.updatedAt]
+            [
+              workout.id,
+              routine.id,
+              workout.name,
+              workout.description,
+              workout.dayOfWeek,
+              workout.createdAt,
+              workout.updatedAt,
+            ]
           );
 
           // Save workout exercises
@@ -262,8 +278,16 @@ class SyncService {
               await db.runAsync(
                 `INSERT OR REPLACE INTO workout_exercises (id, workout_id, exercise_id, order_index, sets, reps, rest_time_seconds, created_at, synced)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-                [we.id, workout.id, we.exerciseId, we.orderIndex, we.sets, we.reps, 
-                 we.restTimeSeconds, new Date().toISOString()]
+                [
+                  we.id,
+                  workout.id,
+                  we.exerciseId,
+                  we.orderIndex,
+                  we.sets,
+                  we.reps,
+                  we.restTimeSeconds,
+                  new Date().toISOString(),
+                ]
               );
             }
           }
@@ -275,14 +299,20 @@ class SyncService {
   private async saveLogRoutinesToLocal(logRoutines: any[]) {
     const db = await getDatabase();
     if (!db) return; // Skip on web
-    
+
     for (const logRoutine of logRoutines) {
       await db.runAsync(
         `INSERT OR REPLACE INTO log_routines (id, routine_id, user_id, start_datetime, end_datetime, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-        [logRoutine.id, logRoutine.routineId, logRoutine.userId || '', 
-         logRoutine.startDatetime, logRoutine.endDatetime, 
-         new Date().toISOString(), new Date().toISOString()]
+        [
+          logRoutine.id,
+          logRoutine.routineId,
+          logRoutine.userId || '',
+          logRoutine.startDatetime,
+          logRoutine.endDatetime,
+          new Date().toISOString(),
+          new Date().toISOString(),
+        ]
       );
 
       // Save log workouts
@@ -291,8 +321,14 @@ class SyncService {
           await db.runAsync(
             `INSERT OR REPLACE INTO log_workouts (id, log_routine_id, workout_id, start_datetime, end_datetime, created_at, synced)
              VALUES (?, ?, ?, ?, ?, ?, 1)`,
-            [logWorkout.id, logRoutine.id, logWorkout.workoutId, 
-             logWorkout.startDatetime, logWorkout.endDatetime, new Date().toISOString()]
+            [
+              logWorkout.id,
+              logRoutine.id,
+              logWorkout.workoutId,
+              logWorkout.startDatetime,
+              logWorkout.endDatetime,
+              new Date().toISOString(),
+            ]
           );
 
           // Save log exercises
@@ -301,9 +337,18 @@ class SyncService {
               await db.runAsync(
                 `INSERT OR REPLACE INTO log_exercises (id, log_workout_id, exercise_id, exercise_name, start_datetime, end_datetime, notes, repetitions, completed, created_at, synced)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-                [logExercise.id, logWorkout.id, logExercise.exerciseId, logExercise.exerciseName,
-                 logExercise.startDatetime, logExercise.endDatetime, logExercise.notes,
-                 logExercise.repetitions, logExercise.completed ? 1 : 0, new Date().toISOString()]
+                [
+                  logExercise.id,
+                  logWorkout.id,
+                  logExercise.exerciseId,
+                  logExercise.exerciseName,
+                  logExercise.startDatetime,
+                  logExercise.endDatetime,
+                  logExercise.notes,
+                  logExercise.repetitions,
+                  logExercise.completed ? 1 : 0,
+                  new Date().toISOString(),
+                ]
               );
 
               // Save log sets
@@ -312,8 +357,17 @@ class SyncService {
                   await db.runAsync(
                     `INSERT OR REPLACE INTO log_sets (id, log_exercise_id, set_number, reps, weight_kg, rest_time_seconds, timestamp, notes, created_at, synced)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-                    [logSet.id, logExercise.id, logSet.setNumber, logSet.reps, logSet.weightKg,
-                     logSet.restTimeSeconds, logSet.timestamp, logSet.notes, new Date().toISOString()]
+                    [
+                      logSet.id,
+                      logExercise.id,
+                      logSet.setNumber,
+                      logSet.reps,
+                      logSet.weightKg,
+                      logSet.restTimeSeconds,
+                      logSet.timestamp,
+                      logSet.notes,
+                      new Date().toISOString(),
+                    ]
                   );
                 }
               }
@@ -327,25 +381,25 @@ class SyncService {
   private async saveExercisesToLocal(exercises: any[]) {
     const db = await getDatabase();
     if (!db) return; // Skip on web
-    
+
     const now = new Date().toISOString();
-    
+
     for (const exercise of exercises) {
       try {
         // Ensure we always have valid timestamps
         const createdAt = exercise.createdAt || exercise.created_at || now;
         const updatedAt = exercise.updatedAt || exercise.updated_at || now;
-        
+
         await db.runAsync(
           `INSERT OR REPLACE INTO exercises (id, name, description, video_url, created_at, updated_at, synced)
            VALUES (?, ?, ?, ?, ?, ?, 1)`,
           [
-            exercise.id, 
-            exercise.name, 
-            exercise.description || null, 
+            exercise.id,
+            exercise.name,
+            exercise.description || null,
             exercise.videoUrl || exercise.video_url || null,
             createdAt,
-            updatedAt
+            updatedAt,
           ]
         );
       } catch (error) {

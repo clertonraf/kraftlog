@@ -1,10 +1,24 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert, FlatList } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { workoutService, WorkoutResponse, WorkoutExerciseResponse } from '@/services/routineService';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  type WorkoutExerciseResponse,
+  type WorkoutResponse,
+  workoutService,
+} from '@/services/routineService';
 
 export default function WorkoutDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -16,12 +30,12 @@ export default function WorkoutDetailsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadWorkout();
-    }, [id])
+    }, [loadWorkout])
   );
 
   const loadWorkout = async () => {
     if (!id) return;
-    
+
     setLoading(true);
     try {
       const data = await workoutService.getWorkoutById(id);
@@ -44,10 +58,10 @@ export default function WorkoutDetailsScreen() {
 
     const confirmDelete = async () => {
       try {
-        const updatedExerciseIds = workout.exercises
-          ?.filter(e => e.exerciseId !== exerciseId)
-          .map(e => e.exerciseId) || [];
-        
+        const updatedExerciseIds =
+          workout.exercises?.filter((e) => e.exerciseId !== exerciseId).map((e) => e.exerciseId) ||
+          [];
+
         await workoutService.updateWorkout(workout.id, {
           name: workout.name,
           orderIndex: workout.orderIndex,
@@ -55,10 +69,11 @@ export default function WorkoutDetailsScreen() {
           routineId: workout.routineId,
           exerciseIds: updatedExerciseIds,
         });
-        
+
         loadWorkout();
       } catch (error: any) {
-        const errorMsg = error.response?.data?.message || error.message || 'Failed to remove exercise';
+        const errorMsg =
+          error.response?.data?.message || error.message || 'Failed to remove exercise';
         if (Platform.OS === 'web') {
           alert(`Error: ${errorMsg}`);
         } else {
@@ -72,14 +87,10 @@ export default function WorkoutDetailsScreen() {
         confirmDelete();
       }
     } else {
-      Alert.alert(
-        'Remove Exercise',
-        'Remove this exercise from the workout?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: confirmDelete },
-        ]
-      );
+      Alert.alert('Remove Exercise', 'Remove this exercise from the workout?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: confirmDelete },
+      ]);
     }
   };
 
@@ -152,7 +163,10 @@ export default function WorkoutDetailsScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+      >
         {/* Workout Info Card */}
         <View style={styles.infoCard}>
           <Text style={styles.workoutName}>{workout.name}</Text>
@@ -175,10 +189,7 @@ export default function WorkoutDetailsScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Exercises</Text>
             {isAdmin && (
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddExercises}
-              >
+              <TouchableOpacity style={styles.addButton} onPress={handleAddExercises}>
                 <Ionicons name="add-circle" size={24} color="#007AFF" />
               </TouchableOpacity>
             )}
@@ -196,10 +207,7 @@ export default function WorkoutDetailsScreen() {
               <Ionicons name="barbell-outline" size={48} color="#CCC" />
               <Text style={styles.emptyText}>No exercises yet</Text>
               {isAdmin && (
-                <TouchableOpacity
-                  style={styles.addFirstButton}
-                  onPress={handleAddExercises}
-                >
+                <TouchableOpacity style={styles.addFirstButton} onPress={handleAddExercises}>
                   <Text style={styles.addFirstButtonText}>Add Exercises</Text>
                 </TouchableOpacity>
               )}
@@ -252,16 +260,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 12,
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
           elevation: 3,
-        }
-    ),
+        }),
   },
   workoutName: {
     fontSize: 24,
@@ -305,16 +312,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
           shadowRadius: 2,
           elevation: 2,
-        }
-    ),
+        }),
   },
   exerciseHeader: {
     flexDirection: 'row',

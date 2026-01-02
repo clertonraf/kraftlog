@@ -1,41 +1,43 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
-import { routineService, RoutineResponse } from '@/services/routineService';
-import { routineImportService } from '@/services/routineImportService';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { routineImportService } from '@/services/routineImportService';
+import { type RoutineResponse, routineService } from '@/services/routineService';
 
 export default function RoutinesScreen() {
   const [routines, setRoutines] = useState<RoutineResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [importing, setImporting] = useState(false);
-  const { user, isOfflineMode, useRemoteServer } = useAuth();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
-
-  // Reload routines whenever the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadRoutines();
-    }, [user])
-  );
 
   const loadRoutines = async () => {
     // In offline mode, use a default user ID
     const userId = user?.id || 'offline-user';
-    
+
     try {
       const data = await routineService.getRoutinesByUserId(userId);
       setRoutines(data);
     } catch (error: any) {
       console.error('Error loading routines:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Failed to load routines';
-      
+
       // If user not found (404), ask to re-login
       if (error.response?.status === 404 && errorMsg.includes('User not found')) {
         if (Platform.OS === 'web') {
@@ -43,14 +45,10 @@ export default function RoutinesScreen() {
             router.replace('/login');
           }
         } else {
-          Alert.alert(
-            'Session Invalid',
-            'Your user account was not found. Please login again.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Login', onPress: () => router.replace('/login') }
-            ]
-          );
+          Alert.alert('Session Invalid', 'Your user account was not found. Please login again.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Login', onPress: () => router.replace('/login') },
+          ]);
         }
       } else {
         if (Platform.OS === 'web') {
@@ -65,6 +63,13 @@ export default function RoutinesScreen() {
     }
   };
 
+  // Reload routines whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadRoutines();
+    }, [loadRoutines])
+  );
+
   const handleRefresh = () => {
     setRefreshing(true);
     loadRoutines();
@@ -78,7 +83,8 @@ export default function RoutinesScreen() {
       loadRoutines();
     } catch (error: any) {
       console.error('Failed to activate routine:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to activate routine';
+      const errorMsg =
+        error.response?.data?.message || error.message || 'Failed to activate routine';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -89,10 +95,12 @@ export default function RoutinesScreen() {
 
   const handleDeleteRoutine = async (id: string) => {
     const confirmDelete = () => {
-      routineService.deleteRoutine(id)
+      routineService
+        .deleteRoutine(id)
         .then(() => loadRoutines())
         .catch((error: any) => {
-          const errorMsg = error.response?.data?.message || error.message || 'Failed to delete routine';
+          const errorMsg =
+            error.response?.data?.message || error.message || 'Failed to delete routine';
           if (Platform.OS === 'web') {
             alert(`Error: ${errorMsg}`);
           } else {
@@ -106,14 +114,10 @@ export default function RoutinesScreen() {
         confirmDelete();
       }
     } else {
-      Alert.alert(
-        'Delete Routine',
-        'Are you sure you want to delete this routine?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: confirmDelete },
-        ]
-      );
+      Alert.alert('Delete Routine', 'Are you sure you want to delete this routine?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: confirmDelete },
+      ]);
     }
   };
 
@@ -122,7 +126,7 @@ export default function RoutinesScreen() {
 
     try {
       setImporting(true);
-      
+
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         copyToCacheDirectory: true,
@@ -134,11 +138,11 @@ export default function RoutinesScreen() {
       }
 
       const asset = result.assets[0];
-      
+
       // Fetch the file as blob
       const response = await fetch(asset.uri);
       const blob = await response.blob();
-      
+
       // Import the routine
       const importResult = await routineImportService.importRoutineFromXlsx(blob, userId);
 
@@ -147,13 +151,13 @@ export default function RoutinesScreen() {
       if (importResult.success) {
         const result = importResult.result!;
         const message = `Import completed!\n\nWorkouts: ${result.successfulWorkouts}/${result.totalWorkouts} successful\nExercises: ${result.successfulExercises}/${result.totalExercises} successful${result.errors.length > 0 ? '\n\nSome errors occurred during import.' : ''}`;
-        
+
         if (Platform.OS === 'web') {
           alert(message);
         } else {
           Alert.alert('Import Successful', message);
         }
-        
+
         loadRoutines();
       } else {
         throw new Error(importResult.error || 'Import failed');
@@ -170,7 +174,7 @@ export default function RoutinesScreen() {
   };
 
   const renderRoutine = ({ item }: { item: RoutineResponse }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.routineCard, item.isActive && styles.activeRoutine]}
       onPress={() => router.push(`/routine/${item.id}`)}
     >
@@ -182,11 +186,9 @@ export default function RoutinesScreen() {
               {item.startDate} {item.endDate && `- ${item.endDate}`}
             </Text>
           )}
-          <Text style={styles.routineStats}>
-            {item.workouts?.length || 0} workouts
-          </Text>
+          <Text style={styles.routineStats}>{item.workouts?.length || 0} workouts</Text>
         </View>
-        
+
         {item.isActive && (
           <View style={styles.activeBadge}>
             <Text style={styles.activeBadgeText}>ACTIVE</Text>
@@ -207,7 +209,7 @@ export default function RoutinesScreen() {
             <Text style={styles.actionButtonText}>Activate</Text>
           </TouchableOpacity>
         )}
-        
+
         <TouchableOpacity
           style={styles.actionButton}
           onPress={(e) => {
@@ -243,10 +245,12 @@ export default function RoutinesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={[
-        styles.contentWrapper,
-        layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' }
-      ]}>
+      <View
+        style={[
+          styles.contentWrapper,
+          layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' },
+        ]}
+      >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Routines</Text>
           <TouchableOpacity
@@ -270,18 +274,18 @@ export default function RoutinesScreen() {
           renderItem={renderRoutine}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="barbell-outline" size={64} color="#999" />
-            <Text style={styles.emptyText}>No routines yet</Text>
-            <Text style={styles.emptySubtext}>Create your first workout routine</Text>
-          </View>
-        }
-      />
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="barbell-outline" size={64} color="#999" />
+              <Text style={styles.emptyText}>No routines yet</Text>
+              <Text style={styles.emptySubtext}>Create your first workout routine</Text>
+            </View>
+          }
+        />
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.fab, { bottom: insets.bottom + 20 }]}
           onPress={() => router.push('/routine/create')}
         >
@@ -343,16 +347,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
           elevation: 3,
-        }
-    ),
+        }),
   },
   activeRoutine: {
     borderWidth: 2,
@@ -437,15 +440,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.3)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.3)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 4,
           elevation: 8,
-        }
-    ),
+        }),
   },
 });

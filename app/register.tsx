@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function RegisterScreen() {
@@ -60,15 +60,20 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={[
-        styles.scrollContainer,
-        layout.isWeb && styles.webScrollContainer
-      ]}>
-        <View style={[
-          styles.content, 
-          { paddingTop: insets.top + 20 },
-          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
-        ]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, layout.isWeb && styles.webScrollContainer]}
+      >
+        <View
+          style={[
+            styles.content,
+            { paddingTop: insets.top + 20 },
+            layout.isWeb && {
+              maxWidth: layout.formMaxWidth as any,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+        >
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join KraftLog today!</Text>
 
@@ -146,10 +151,7 @@ export default function RegisterScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => router.back()}
-              disabled={loading}
-            >
+            <TouchableOpacity onPress={() => router.back()} disabled={loading}>
               <Text style={styles.linkText}>
                 Already have an account? <Text style={styles.linkBold}>Login</Text>
               </Text>

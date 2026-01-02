@@ -1,32 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
-  TextInput,
-  Switch,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { configService } from '@/services/configService';
 import { updateApiUrl } from '@/services/api';
+import { configService } from '@/services/configService';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout, isOfflineMode, useRemoteServer } = useAuth();
+  const { user, logout, useRemoteServer } = useAuth();
   const router = useRouter();
   const [apiUrl, setApiUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    loadConfig();
-  }, []);
 
   const loadConfig = async () => {
     const config = await configService.getConfig();
@@ -35,22 +30,22 @@ export default function SettingsScreen() {
     }
   };
 
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
+
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/login');
-          },
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/login');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleSwitchMode = () => {
@@ -66,16 +61,12 @@ export default function SettingsScreen() {
               router.replace('/server-config');
             } else {
               await configService.setOfflineMode();
-              Alert.alert(
-                'Offline Mode',
-                'Switched to offline mode. Restarting...',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => router.replace('/'),
-                  },
-                ]
-              );
+              Alert.alert('Offline Mode', 'Switched to offline mode. Restarting...', [
+                {
+                  text: 'OK',
+                  onPress: () => router.replace('/'),
+                },
+              ]);
             }
           },
         },
@@ -91,7 +82,7 @@ export default function SettingsScreen() {
 
     try {
       new URL(apiUrl);
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Please enter a valid URL');
       return;
     }
@@ -109,7 +100,7 @@ export default function SettingsScreen() {
           },
         },
       ]);
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Failed to update server URL');
     } finally {
       setLoading(false);
@@ -118,7 +109,10 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+    >
       <Text style={styles.title}>Settings</Text>
 
       {/* Mode Section */}
@@ -131,15 +125,10 @@ export default function SettingsScreen() {
                 {isOfflineMode ? '🏠 Offline Mode' : '☁️ Remote Server'}
               </Text>
               <Text style={styles.description}>
-                {isOfflineMode
-                  ? 'All data stored locally'
-                  : 'Data synced with server'}
+                {isOfflineMode ? 'All data stored locally' : 'Data synced with server'}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.changeButton}
-              onPress={handleSwitchMode}
-            >
+            <TouchableOpacity style={styles.changeButton} onPress={handleSwitchMode}>
               <Text style={styles.changeButtonText}>Change</Text>
             </TouchableOpacity>
           </View>
@@ -189,10 +178,7 @@ export default function SettingsScreen() {
                   <Text style={styles.label}>Server URL</Text>
                   <Text style={styles.value}>{apiUrl || 'Not configured'}</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => setIsEditing(true)}
-                >
+                <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
                   <Text style={styles.editButtonText}>Edit</Text>
                 </TouchableOpacity>
               </View>
@@ -223,9 +209,7 @@ export default function SettingsScreen() {
                     onPress={handleUpdateApiUrl}
                     disabled={loading}
                   >
-                    <Text style={styles.saveButtonText}>
-                      {loading ? 'Saving...' : 'Save'}
-                    </Text>
+                    <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -241,7 +225,9 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Name</Text>
-              <Text style={styles.value}>{user.name} {user.surname}</Text>
+              <Text style={styles.value}>
+                {user.name} {user.surname}
+              </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
@@ -259,10 +245,7 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
         </View>
@@ -318,16 +301,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    ...(Platform.OS === 'web' 
-      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' } 
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }
       : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
           shadowRadius: 2,
           elevation: 2,
-        }
-    ),
+        }),
   },
   row: {
     flexDirection: 'row',

@@ -1,9 +1,18 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { logRoutineService, LogRoutineResponse } from '@/services/logService';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { type LogRoutineResponse, logRoutineService } from '@/services/logService';
 
 export default function RoutineHistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,17 +22,18 @@ export default function RoutineHistoryDetailScreen() {
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [loadData]);
 
   const loadData = async () => {
     if (!id) return;
-    
+
     setLoading(true);
     try {
       const data = await logRoutineService.getLogRoutineById(id);
       setLogRoutine(data);
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load workout details';
+      const errorMsg =
+        error.response?.data?.message || error.message || 'Failed to load workout details';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -48,13 +58,13 @@ export default function RoutineHistoryDetailScreen() {
 
   const formatDuration = (startDate: string, endDate?: string) => {
     if (!endDate) return 'In progress';
-    
+
     const start = new Date(startDate).getTime();
     const end = new Date(endDate).getTime();
     const durationMs = end - start;
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -63,12 +73,12 @@ export default function RoutineHistoryDetailScreen() {
 
   const calculateTotalVolume = () => {
     if (!logRoutine?.logWorkouts) return 0;
-    
+
     let total = 0;
-    logRoutine.logWorkouts.forEach(workout => {
-      workout.logExercises?.forEach(exercise => {
-        exercise.logSets?.forEach(set => {
-          total += set.weightKg * set.reps;
+    logRoutine.logWorkouts.forEach((workout) => {
+      workout.logExercises?.forEach((exercise) => {
+        exercise.logSets?.forEach((set) => {
+          total += (set.weightKg || 0) * (set.reps || 0);
         });
       });
     });
@@ -77,10 +87,10 @@ export default function RoutineHistoryDetailScreen() {
 
   const calculateTotalSets = () => {
     if (!logRoutine?.logWorkouts) return 0;
-    
+
     let total = 0;
-    logRoutine.logWorkouts.forEach(workout => {
-      workout.logExercises?.forEach(exercise => {
+    logRoutine.logWorkouts.forEach((workout) => {
+      workout.logExercises?.forEach((exercise) => {
         total += exercise.logSets?.length || 0;
       });
     });
@@ -114,7 +124,9 @@ export default function RoutineHistoryDetailScreen() {
           <Text style={styles.summaryDate}>{formatDateTime(logRoutine.startDatetime)}</Text>
           <View style={styles.summaryStats}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{formatDuration(logRoutine.startDatetime, logRoutine.endDatetime)}</Text>
+              <Text style={styles.statValue}>
+                {formatDuration(logRoutine.startDatetime, logRoutine.endDatetime)}
+              </Text>
               <Text style={styles.statLabel}>Duration</Text>
             </View>
             <View style={styles.statDivider} />
@@ -132,7 +144,7 @@ export default function RoutineHistoryDetailScreen() {
 
         <View style={styles.workoutsSection}>
           <Text style={styles.sectionTitle}>Workouts ({logRoutine.logWorkouts?.length || 0})</Text>
-          
+
           {logRoutine.logWorkouts?.map((workout, index) => (
             <View key={workout.id} style={styles.workoutCard}>
               <View style={styles.workoutHeader}>
@@ -140,9 +152,7 @@ export default function RoutineHistoryDetailScreen() {
                   <Text style={styles.workoutNumberText}>{index + 1}</Text>
                 </View>
                 <View style={styles.workoutInfo}>
-                  <Text style={styles.workoutTime}>
-                    {formatDateTime(workout.startDatetime)}
-                  </Text>
+                  <Text style={styles.workoutTime}>{formatDateTime(workout.startDatetime)}</Text>
                   {workout.endDatetime && (
                     <Text style={styles.workoutDuration}>
                       Duration: {formatDuration(workout.startDatetime, workout.endDatetime)}
@@ -159,7 +169,7 @@ export default function RoutineHistoryDetailScreen() {
                         {exercise.exerciseName || `Exercise ${exIdx + 1}`}
                       </Text>
                       <View style={styles.setsGrid}>
-                        {exercise.logSets?.map((set, setIdx) => (
+                        {exercise.logSets?.map((set, _setIdx) => (
                           <View key={set.id} style={styles.setItem}>
                             <Text style={styles.setLabel}>Set {set.setNumber}</Text>
                             <Text style={styles.setValue}>
@@ -275,8 +285,7 @@ const styles = StyleSheet.create({
           shadowOpacity: 0.1,
           shadowRadius: 2,
           elevation: 2,
-        }
-    ),
+        }),
   },
   workoutHeader: {
     flexDirection: 'row',

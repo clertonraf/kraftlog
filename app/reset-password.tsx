@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { authService } from '@/services/authService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { authService } from '@/services/authService';
 
 export default function ResetPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
@@ -31,7 +31,7 @@ export default function ResetPasswordScreen() {
         { text: 'OK', onPress: () => router.replace('/login') },
       ]);
     }
-  }, [token]);
+  }, [token, router.replace]);
 
   const handleSubmit = async () => {
     if (!newPassword || !confirmPassword) {
@@ -82,15 +82,20 @@ export default function ResetPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={[
-        styles.scrollContainer,
-        layout.isWeb && styles.webScrollContainer
-      ]}>
-        <View style={[
-          styles.content, 
-          { paddingTop: insets.top + 40 },
-          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
-        ]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, layout.isWeb && styles.webScrollContainer]}
+      >
+        <View
+          style={[
+            styles.content,
+            { paddingTop: insets.top + 40 },
+            layout.isWeb && {
+              maxWidth: layout.formMaxWidth as any,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+        >
           <Text style={styles.title}>Reset Password</Text>
           <Text style={styles.subtitle}>Enter your new password below</Text>
 

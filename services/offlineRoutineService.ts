@@ -1,7 +1,6 @@
-import { getDatabase } from './database';
-import { routineService as onlineRoutineService } from './routineService';
-import { syncService } from './syncService';
 import { v4 as uuidv4 } from '@/utils/uuid';
+import { getDatabase } from './database';
+import { syncService } from './syncService';
 
 export interface RoutineLocal {
   id: string;
@@ -26,14 +25,14 @@ const transformRoutine = (routine: any) => ({
 
 class OfflineRoutineService {
   // Get all routines for a user from local database
-  async getRoutinesByUserId(userId: string, online = false): Promise<any[]> {
+  async getRoutinesByUserId(userId: string, _online = false): Promise<any[]> {
     const db = await getDatabase();
-    
+
     // Get from local DB
-    const routines = await db.getAllAsync<RoutineLocal>(
+    const routines = (await db.getAllAsync(
       'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
       [userId]
-    );
+    )) as RoutineLocal[];
 
     // Transform to camelCase
     return routines.map(transformRoutine);
@@ -42,11 +41,8 @@ class OfflineRoutineService {
   // Get routine by ID from local database
   async getRoutineById(id: string): Promise<any> {
     const db = await getDatabase();
-    
-    const routine = await db.getFirstAsync(
-      'SELECT * FROM routines WHERE id = ?',
-      [id]
-    );
+
+    const routine = await db.getFirstAsync('SELECT * FROM routines WHERE id = ?', [id]);
 
     if (!routine) {
       throw new Error('Routine not found');
@@ -94,7 +90,7 @@ class OfflineRoutineService {
         data.startDate || null,
         data.endDate || null,
         now,
-        now
+        now,
       ]
     );
 
@@ -151,10 +147,7 @@ class OfflineRoutineService {
     updates.push('updated_at = ?', 'synced = 0');
     values.push(now, id);
 
-    await db.runAsync(
-      `UPDATE routines SET ${updates.join(', ')} WHERE id = ?`,
-      values
-    );
+    await db.runAsync(`UPDATE routines SET ${updates.join(', ')} WHERE id = ?`, values);
 
     // Add to sync queue
     await syncService.addToSyncQueue('routines', id, 'UPDATE', data);
@@ -172,16 +165,16 @@ class OfflineRoutineService {
   async activateRoutine(id: string): Promise<any> {
     console.log('[offlineRoutineService] Activating routine:', id);
     const db = await getDatabase();
-    
+
     // First, deactivate all routines
     console.log('[offlineRoutineService] Deactivating all routines');
     await db.runAsync('UPDATE routines SET is_active = 0 WHERE is_active = 1');
-    
+
     // Then activate the selected routine
     console.log('[offlineRoutineService] Activating selected routine');
-    const result = await this.updateRoutine(id, { 
+    const result = await this.updateRoutine(id, {
       isActive: true,
-      startDate: new Date().toISOString().split('T')[0]
+      startDate: new Date().toISOString().split('T')[0],
     });
     console.log('[offlineRoutineService] Routine activated:', result);
     return result;
@@ -277,11 +270,8 @@ class OfflineRoutineService {
   // Get workout by ID
   async getWorkoutById(id: string): Promise<any> {
     const db = await getDatabase();
-    
-    const workout = await db.getFirstAsync(
-      'SELECT * FROM workouts WHERE id = ?',
-      [id]
-    );
+
+    const workout = await db.getFirstAsync('SELECT * FROM workouts WHERE id = ?', [id]);
 
     if (!workout) {
       throw new Error('Workout not found');

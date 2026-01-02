@@ -74,7 +74,7 @@ export interface WorkoutExerciseCreateRequest {
   technique?: WorkoutTechnique;
 }
 
-export type WorkoutTechnique = 
+export type WorkoutTechnique =
   | 'STANDARD'
   | 'SST'
   | 'GIRONDA'

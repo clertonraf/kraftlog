@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
-import { configService } from '@/services/configService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { configService } from '@/services/configService';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -29,7 +29,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     loadApiUrl();
-  }, []);
+  }, [loadApiUrl]);
 
   const loadApiUrl = async () => {
     const url = await configService.getApiUrl();
@@ -53,29 +53,21 @@ export default function LoginScreen() {
     }
   };
 
-  const handleUseOffline = () => {
-    Alert.alert(
-      'Use Offline',
-      'Switch to offline mode? This will clear any synced data from the device. You can change this later in settings.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Use Offline',
-          onPress: async () => {
-            try {
-              // Import clearAllData
-              const { clearAllData } = await import('@/services/database');
-              await clearAllData();
-              await configService.setOfflineMode();
-              router.replace('/(tabs)');
-            } catch (error) {
-              console.error('Failed to switch to offline mode:', error);
-              Alert.alert('Error', 'Failed to switch to offline mode');
-            }
-          },
-        },
-      ]
-    );
+  const handleUseOffline = async () => {
+    setLoading(true);
+    try {
+      // Import clearAllData
+      const { clearAllData } = await import('@/services/database');
+      await clearAllData();
+      await configService.setOfflineMode();
+      // Force reload by replacing to index which will redirect to tabs
+      router.replace('/');
+    } catch (error) {
+      console.error('Failed to switch to offline mode:', error);
+      Alert.alert('Error', 'Failed to switch to offline mode');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,22 +75,38 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={[
-        styles.scrollContainer,
-        layout.isWeb && styles.webScrollContainer
-      ]}>
-        <View style={[
-          styles.content, 
-          { paddingTop: insets.top + 40 },
-          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
-        ]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, layout.isWeb && styles.webScrollContainer]}
+      >
+        <View
+          style={[
+            styles.content,
+            { paddingTop: insets.top + 40 },
+            layout.isWeb && {
+              maxWidth: layout.formMaxWidth as any,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+        >
           <Text style={styles.title}>KraftLog</Text>
           <Text style={styles.subtitle}>Login to sync your data</Text>
 
           {apiUrl && (
             <View style={styles.serverInfo}>
-              <Text style={styles.serverLabel}>Connected to:</Text>
-              <Text style={styles.serverUrl}>{apiUrl}</Text>
+              <View style={styles.serverInfoHeader}>
+                <View style={styles.serverInfoText}>
+                  <Text style={styles.serverLabel}>Connected to:</Text>
+                  <Text style={styles.serverUrl}>{apiUrl}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => router.push('/server-config')}
+                  style={styles.changeServerButton}
+                  disabled={loading}
+                >
+                  <Text style={styles.changeServerButtonText}>Change</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -245,6 +253,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
   },
+  serverInfoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  serverInfoText: {
+    flex: 1,
+  },
   serverLabel: {
     fontSize: 12,
     color: '#666',
@@ -254,6 +270,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
+  },
+  changeServerButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  changeServerButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   divider: {
     flexDirection: 'row',

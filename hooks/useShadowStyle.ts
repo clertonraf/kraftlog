@@ -1,4 +1,4 @@
-import { Platform, ViewStyle } from 'react-native';
+import { Platform, type ViewStyle } from 'react-native';
 
 interface ShadowConfig {
   shadowColor?: string;
@@ -26,9 +26,11 @@ export const useShadowStyle = (config: ShadowConfig): ViewStyle => {
     const offsetX = shadowOffset.width;
     const offsetY = shadowOffset.height;
     const blur = shadowRadius;
-    const alpha = Math.round(shadowOpacity * 255).toString(16).padStart(2, '0');
+    const alpha = Math.round(shadowOpacity * 255)
+      .toString(16)
+      .padStart(2, '0');
     const color = `${shadowColor}${alpha}`;
-    
+
     return {
       boxShadow: `${offsetX}px ${offsetY}px ${blur}px ${color}`,
     } as ViewStyle;

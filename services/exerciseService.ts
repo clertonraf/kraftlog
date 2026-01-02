@@ -1,24 +1,15 @@
-import api from './api';
-import { isOfflineMode } from './api';
-import { offlineExerciseService } from './offlineExerciseService';
-import {
-  MuscleGroup,
-  EquipmentType,
-} from '@/types/exercise';
 import type {
-  MuscleResponse,
   ExerciseResponse,
   ExerciseUpdateRequest,
   ImportResult,
+  MuscleResponse,
 } from '@/types/exercise';
+import { EquipmentType, MuscleGroup } from '@/types/exercise';
+import api, { isOfflineMode } from './api';
+import { offlineExerciseService } from './offlineExerciseService';
 
 // Re-export types for backward compatibility
-export type {
-  MuscleResponse,
-  ExerciseResponse,
-  ExerciseUpdateRequest,
-  ImportResult,
-};
+export type { MuscleResponse, ExerciseResponse, ExerciseUpdateRequest, ImportResult };
 
 // Re-export enums (must be imported as values, not types)
 export { MuscleGroup, EquipmentType };
@@ -35,7 +26,7 @@ export const exerciseService = {
   async getExerciseById(id: string): Promise<ExerciseResponse> {
     if (await isOfflineMode()) {
       const exercises = await offlineExerciseService.getAllExercises();
-      const exercise = exercises.find(e => e.id === id);
+      const exercise = exercises.find((e) => e.id === id);
       if (!exercise) throw new Error('Exercise not found');
       return exercise;
     }
@@ -53,7 +44,7 @@ export const exerciseService = {
 
   async createExercise(data: ExerciseUpdateRequest): Promise<ExerciseResponse> {
     if (await isOfflineMode()) {
-      return offlineExerciseService.createExercise(data);
+      return offlineExerciseService.createExercise({ ...data, name: data.name || '' });
     }
     const response = await api.post<ExerciseResponse>('/admin/exercises', data);
     return response.data;

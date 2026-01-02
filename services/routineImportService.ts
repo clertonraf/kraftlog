@@ -1,5 +1,5 @@
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
@@ -25,18 +25,18 @@ export interface RoutineImportResponse {
 // Import service runs on port 8082
 const getImportApiUrl = () => {
   const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
-  
+
   if (envUrl) {
     // Replace port 8080 with 8082 for import service
     return envUrl.replace(':8080', ':8082').replace('/api', '');
   }
-  
+
   if (Platform.OS === 'ios') {
     return 'http://localhost:8082';
   } else if (Platform.OS === 'android') {
     return 'http://10.0.2.2:8082';
   }
-  
+
   return 'http://localhost:8082';
 };
 
@@ -51,7 +51,7 @@ export const routineImportService = {
    */
   async importRoutineFromXlsx(file: File | Blob, userId: string): Promise<RoutineImportResponse> {
     const formData = new FormData();
-    
+
     if (file instanceof File) {
       formData.append('file', file);
     } else {
@@ -82,9 +82,11 @@ export const routineImportService = {
    * @param file - The XLSX file to preview
    * @returns JSON structure of the routine
    */
-  async generateJsonFromXlsx(file: File | Blob): Promise<{ success: boolean; json?: string; error?: string }> {
+  async generateJsonFromXlsx(
+    file: File | Blob
+  ): Promise<{ success: boolean; json?: string; error?: string }> {
     const formData = new FormData();
-    
+
     if (file instanceof File) {
       formData.append('file', file);
     } else {

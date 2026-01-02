@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService, UserResponse, LoginRequest, RegisterRequest } from '@/services/authService';
-import { setAuthErrorCallback, updateApiUrl } from '@/services/api';
-import { configService } from '@/services/configService';
 import { router } from 'expo-router';
+import type React from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { setAuthErrorCallback, updateApiUrl } from '@/services/api';
+import {
+  authService,
+  type LoginRequest,
+  type RegisterRequest,
+  type UserResponse,
+} from '@/services/authService';
+import { configService } from '@/services/configService';
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -26,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     initializeAuth();
-    
+
     // Set up global auth error handler
     setAuthErrorCallback(() => {
       console.log('Auth error detected - logging out');
@@ -38,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to navigate to login:', error);
       }
     });
-  }, []);
+  }, [initializeAuth]);
 
   const initializeAuth = async () => {
     try {
