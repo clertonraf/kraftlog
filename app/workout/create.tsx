@@ -36,6 +36,11 @@ export default function CreateWorkoutScreen() {
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingExercise, setEditingExercise] = useState<WorkoutExerciseWithDetails | null>(null);
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
+  const [newExerciseName, setNewExerciseName] = useState('');
+  const [newExerciseDescription, setNewExerciseDescription] = useState('');
+  const [newExerciseVideoUrl, setNewExerciseVideoUrl] = useState('');
+  const [creatingExercise, setCreatingExercise] = useState(false);
 
   useEffect(() => {
     loadExercises();
@@ -160,6 +165,41 @@ export default function CreateWorkoutScreen() {
     };
     setWorkoutExercises(prev => [...prev, newExercise]);
     setShowExercisePicker(false);
+  };
+
+  const handleCreateNewExercise = async () => {
+    if (!newExerciseName.trim()) {
+      Alert.alert('Error', 'Please enter an exercise name');
+      return;
+    }
+
+    setCreatingExercise(true);
+    try {
+      const newExercise = await exerciseService.createExercise({
+        name: newExerciseName.trim(),
+        description: newExerciseDescription.trim() || undefined,
+        videoUrl: newExerciseVideoUrl.trim() || undefined,
+      });
+      
+      // Reload exercises to include the new one
+      await loadExercises();
+      
+      // Add the new exercise to the workout
+      addExercise(newExercise);
+      
+      // Reset form and close modal
+      setNewExerciseName('');
+      setNewExerciseDescription('');
+      setNewExerciseVideoUrl('');
+      setShowCreateExercise(false);
+      
+      Alert.alert('Success', 'Exercise created and added to workout');
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to create exercise';
+      Alert.alert('Error', errorMsg);
+    } finally {
+      setCreatingExercise(false);
+    }
   };
 
   const removeExercise = (exerciseId: string) => {
@@ -321,7 +361,12 @@ export default function CreateWorkoutScreen() {
               <Text style={styles.modalCancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Exercise</Text>
-            <View style={{ width: 60 }} />
+            <TouchableOpacity onPress={() => {
+              setShowExercisePicker(false);
+              setShowCreateExercise(true);
+            }}>
+              <Ionicons name="add-circle" size={24} color="#007AFF" />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.searchContainer}>
@@ -345,6 +390,21 @@ export default function CreateWorkoutScreen() {
               renderItem={renderExercisePickerItem}
               keyExtractor={(item) => item.id}
               style={styles.exercisePickerList}
+              ListEmptyComponent={
+                <View style={styles.emptyExerciseList}>
+                  <Text style={styles.emptyExerciseText}>No exercises found</Text>
+                  <TouchableOpacity 
+                    style={styles.createNewButton}
+                    onPress={() => {
+                      setShowExercisePicker(false);
+                      setShowCreateExercise(true);
+                    }}
+                  >
+                    <Ionicons name="add-circle" size={20} color="#fff" />
+                    <Text style={styles.createNewButtonText}>Create New Exercise</Text>
+                  </TouchableOpacity>
+                </View>
+              }
             />
           )}
         </View>
@@ -393,6 +453,76 @@ export default function CreateWorkoutScreen() {
               <Text style={styles.techniqueModalCloseText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* Create Exercise Modal */}
+      <Modal
+        visible={showCreateExercise}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => {
+              setShowCreateExercise(false);
+              setNewExerciseName('');
+              setNewExerciseDescription('');
+              setNewExerciseVideoUrl('');
+            }}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Create Exercise</Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.createExerciseForm}>
+              <Text style={styles.inputLabel}>Name *</Text>
+              <TextInput
+                style={styles.input}
+                value={newExerciseName}
+                onChangeText={setNewExerciseName}
+                placeholder="Exercise name"
+                placeholderTextColor="#999"
+                autoCapitalize="words"
+              />
+
+              <Text style={styles.inputLabel}>Description (optional)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={newExerciseDescription}
+                onChangeText={setNewExerciseDescription}
+                placeholder="Exercise description"
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={3}
+              />
+
+              <Text style={styles.inputLabel}>Video URL (optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={newExerciseVideoUrl}
+                onChangeText={setNewExerciseVideoUrl}
+                placeholder="https://youtube.com/..."
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+
+              <TouchableOpacity
+                style={[styles.createExerciseButton, creatingExercise && styles.buttonDisabled]}
+                onPress={handleCreateNewExercise}
+                disabled={creatingExercise}
+              >
+                {creatingExercise ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.createExerciseButtonText}>Create & Add to Workout</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -662,5 +792,58 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  emptyExerciseList: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyExerciseText: {
+    fontSize: 16,
+    color: '#999',
+    marginBottom: 16,
+  },
+  createNewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
+  },
+  createNewButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  createExerciseForm: {
+    padding: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+    paddingTop: 12,
+  },
+  createExerciseButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  createExerciseButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
 });
