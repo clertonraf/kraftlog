@@ -54,14 +54,22 @@ export default function LoginScreen() {
   const handleUseOffline = () => {
     Alert.alert(
       'Use Offline',
-      'Switch to offline mode? You can change this later in settings.',
+      'Switch to offline mode? This will clear any synced data from the device. You can change this later in settings.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Use Offline',
           onPress: async () => {
-            await configService.setOfflineMode();
-            router.replace('/(tabs)');
+            try {
+              // Import clearAllData
+              const { clearAllData } = await import('@/services/database');
+              await clearAllData();
+              await configService.setOfflineMode();
+              router.replace('/(tabs)');
+            } catch (error) {
+              console.error('Failed to switch to offline mode:', error);
+              Alert.alert('Error', 'Failed to switch to offline mode');
+            }
           },
         },
       ]

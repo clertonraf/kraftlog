@@ -219,6 +219,40 @@ export const closeDatabase = async () => {
   }
 };
 
+export const clearAllData = async () => {
+  if (Platform.OS === 'web') {
+    console.log('Cannot clear database on web platform');
+    return;
+  }
+  
+  const database = await getDatabase();
+  if (!database) return;
+  
+  console.log('Clearing all local data...');
+  
+  try {
+    // Clear all tables except migrations
+    await database.execAsync(`
+      DELETE FROM log_sets;
+      DELETE FROM log_exercises;
+      DELETE FROM log_workouts;
+      DELETE FROM log_routines;
+      DELETE FROM workout_exercises;
+      DELETE FROM workouts;
+      DELETE FROM routines;
+      DELETE FROM exercise_muscles;
+      DELETE FROM exercises;
+      DELETE FROM muscles;
+      DELETE FROM sync_queue;
+    `);
+    
+    console.log('All local data cleared successfully');
+  } catch (error) {
+    console.error('Failed to clear local data:', error);
+    throw error;
+  }
+};
+
 // Migration system
 const runMigrations = async (database: any) => {
   // Create migrations table if it doesn't exist

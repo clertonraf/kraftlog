@@ -26,34 +26,17 @@ const transformRoutine = (routine: any) => ({
 
 class OfflineRoutineService {
   // Get all routines for a user from local database
-  async getRoutinesByUserId(userId: string, online = true): Promise<any[]> {
+  async getRoutinesByUserId(userId: string, online = false): Promise<any[]> {
     const db = await getDatabase();
     
-    // Try to get from local DB first
+    // Get from local DB
     const routines = await db.getAllAsync<RoutineLocal>(
       'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
       [userId]
     );
 
     // Transform to camelCase
-    const transformedRoutines = routines.map(transformRoutine);
-
-    // If online, try to sync first
-    if (online) {
-      try {
-        await syncService.pullFromServer(userId);
-        // Refetch after sync
-        const updatedRoutines = await db.getAllAsync<RoutineLocal>(
-          'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
-          [userId]
-        );
-        return updatedRoutines.map(transformRoutine);
-      } catch (error) {
-        console.log('Failed to sync, using local data');
-      }
-    }
-
-    return transformedRoutines;
+    return routines.map(transformRoutine);
   }
 
   // Get routine by ID from local database
