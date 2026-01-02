@@ -117,7 +117,7 @@ export const routineService = {
 
   async activateRoutine(id: string): Promise<RoutineResponse> {
     if (await isOfflineMode()) {
-      return offlineRoutineService.updateRoutine(id, { isActive: true });
+      return offlineRoutineService.activateRoutine(id);
     }
     const response = await api.put<RoutineResponse>(`/routines/${id}/activate`);
     return response.data;

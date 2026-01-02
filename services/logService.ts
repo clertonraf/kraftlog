@@ -183,6 +183,10 @@ export const logRoutineService = {
   },
 
   async getLogRoutinesByRoutineId(routineId: string): Promise<LogRoutineResponse[]> {
+    if (await isOfflineMode()) {
+      // TODO: Implement offline log routines service
+      return [];
+    }
     const response = await api.get<LogRoutineResponse[]>(`/log-routines/routine/${routineId}`);
     return response.data;
   },

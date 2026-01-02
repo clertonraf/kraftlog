@@ -167,7 +167,22 @@ class OfflineRoutineService {
       console.log('Background sync will retry later');
     });
 
-    return { id, ...data, updatedAt: now, synced: false };
+    // Return the updated routine
+    return this.getRoutineById(id);
+  }
+
+  // Activate routine (deactivate all others first)
+  async activateRoutine(id: string): Promise<any> {
+    const db = await getDatabase();
+    
+    // First, deactivate all routines
+    await db.runAsync('UPDATE routines SET is_active = 0 WHERE is_active = 1');
+    
+    // Then activate the selected routine
+    return this.updateRoutine(id, { 
+      isActive: true,
+      startDate: new Date().toISOString().split('T')[0]
+    });
   }
 
   // Delete routine
