@@ -69,10 +69,13 @@ export default function RoutinesScreen() {
   };
 
   const handleActivateRoutine = async (id: string) => {
+    console.log('Activating routine:', id);
     try {
       await routineService.activateRoutine(id);
+      console.log('Routine activated successfully, reloading...');
       loadRoutines();
     } catch (error: any) {
+      console.error('Failed to activate routine:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Failed to activate routine';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);

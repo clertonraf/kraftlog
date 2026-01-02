@@ -13,6 +13,17 @@ export interface RoutineLocal {
   synced: boolean;
 }
 
+// Helper to transform database snake_case to camelCase
+const transformRoutine = (routine: any) => ({
+  ...routine,
+  userId: routine.user_id || routine.userId,
+  isActive: routine.is_active === 1,
+  startDate: routine.start_date || routine.startDate,
+  endDate: routine.end_date || routine.endDate,
+  createdAt: routine.created_at || routine.createdAt,
+  updatedAt: routine.updated_at || routine.updatedAt,
+});
+
 class OfflineRoutineService {
   // Get all routines for a user from local database
   async getRoutinesByUserId(userId: string, online = true): Promise<any[]> {
@@ -24,6 +35,9 @@ class OfflineRoutineService {
       [userId]
     );
 
+    // Transform to camelCase
+    const transformedRoutines = routines.map(transformRoutine);
+
     // If online, try to sync first
     if (online) {
       try {
@@ -33,13 +47,13 @@ class OfflineRoutineService {
           'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
           [userId]
         );
-        return updatedRoutines;
+        return updatedRoutines.map(transformRoutine);
       } catch (error) {
         console.log('Failed to sync, using local data');
       }
     }
 
-    return routines;
+    return transformedRoutines;
   }
 
   // Get routine by ID from local database
@@ -73,10 +87,10 @@ class OfflineRoutineService {
       );
     }
 
-    return {
+    return transformRoutine({
       ...routine,
       workouts,
-    };
+    });
   }
 
   // Create routine (save locally and queue for sync)
@@ -173,16 +187,21 @@ class OfflineRoutineService {
 
   // Activate routine (deactivate all others first)
   async activateRoutine(id: string): Promise<any> {
+    console.log('[offlineRoutineService] Activating routine:', id);
     const db = await getDatabase();
     
     // First, deactivate all routines
+    console.log('[offlineRoutineService] Deactivating all routines');
     await db.runAsync('UPDATE routines SET is_active = 0 WHERE is_active = 1');
     
     // Then activate the selected routine
-    return this.updateRoutine(id, { 
+    console.log('[offlineRoutineService] Activating selected routine');
+    const result = await this.updateRoutine(id, { 
       isActive: true,
       startDate: new Date().toISOString().split('T')[0]
     });
+    console.log('[offlineRoutineService] Routine activated:', result);
+    return result;
   }
 
   // Delete routine
