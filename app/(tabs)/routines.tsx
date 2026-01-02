@@ -249,22 +249,20 @@ export default function RoutinesScreen() {
       ]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Routines</Text>
-          {useRemoteServer && (
-            <TouchableOpacity
-              style={styles.importButton}
-              onPress={handleImportRoutine}
-              disabled={importing}
-            >
-              {importing ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <>
-                  <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
-                  <Text style={styles.importButtonText}>Import</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.importButton}
+            onPress={handleImportRoutine}
+            disabled={importing}
+          >
+            {importing ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <>
+                <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
+                <Text style={styles.importButtonText}>Import</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         <FlatList

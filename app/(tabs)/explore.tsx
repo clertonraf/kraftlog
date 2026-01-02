@@ -412,7 +412,7 @@ export default function ExercisesScreen() {
             )}
           />
 
-          {isAdmin && useRemoteServer && (
+          {isAdmin && (
             <TouchableOpacity
               style={styles.importButton}
               onPress={handleImportPdf}

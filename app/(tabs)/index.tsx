@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 
 export default function HomeScreen() {
-  const { user, logout, isOfflineMode } = useAuth();
+  const { user, logout, isOfflineMode, useRemoteServer } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -21,13 +21,13 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Welcome to KraftLog!</Text>
           <Text style={styles.subtitle}>
-            {isOfflineMode ? 'Using Offline Mode' : `Hello, ${user?.name}!`}
+            {useRemoteServer && user ? `Hello, ${user.name}!` : 'Track your fitness journey'}
           </Text>
         </View>
 
-        {!isOfflineMode && <SyncStatusIndicator />}
+        {useRemoteServer && <SyncStatusIndicator />}
 
-        {user && (
+        {useRemoteServer && user && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Your Profile</Text>
             <View style={styles.infoRow}>
@@ -59,7 +59,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {isOfflineMode && (
+        {!useRemoteServer && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Offline Mode</Text>
             <Text style={styles.infoText}>
@@ -86,7 +86,7 @@ export default function HomeScreen() {
           <Text style={styles.comingSoon}>Coming soon...</Text>
         </View>
 
-        {!isOfflineMode && user && (
+        {useRemoteServer && user && (
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
