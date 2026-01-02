@@ -14,6 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { authService } from '@/services/authService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function ResetPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
@@ -22,6 +23,7 @@ export default function ResetPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { token } = useLocalSearchParams<{ token: string }>();
+  const layout = useResponsiveLayout();
 
   useEffect(() => {
     if (!token) {
@@ -80,8 +82,15 @@ export default function ResetPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
+      <ScrollView contentContainerStyle={[
+        styles.scrollContainer,
+        layout.isWeb && styles.webScrollContainer
+      ]}>
+        <View style={[
+          styles.content, 
+          { paddingTop: insets.top + 40 },
+          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
+        ]}>
           <Text style={styles.title}>Reset Password</Text>
           <Text style={styles.subtitle}>Enter your new password below</Text>
 
@@ -195,5 +204,10 @@ const styles = StyleSheet.create({
   linkBold: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  webScrollContainer: {
+    minHeight: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
 });

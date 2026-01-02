@@ -13,12 +13,14 @@ import {
 import { useRouter } from 'expo-router';
 import { configService } from '@/services/configService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function ServerConfigScreen() {
   const [apiUrl, setApiUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
 
   const handleOfflineMode = async () => {
     setLoading(true);
@@ -80,8 +82,15 @@ export default function ServerConfigScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
+      <ScrollView contentContainerStyle={[
+        styles.scrollContainer,
+        layout.isWeb && styles.webScrollContainer
+      ]}>
+        <View style={[
+          styles.content, 
+          { paddingTop: insets.top + 40 },
+          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
+        ]}>
           <Text style={styles.title}>Welcome to KraftLog</Text>
           <Text style={styles.subtitle}>
             Choose how you want to use the app
@@ -239,5 +248,10 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 12,
     marginTop: 20,
+  },
+  webScrollContainer: {
+    minHeight: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
 });

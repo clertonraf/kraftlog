@@ -6,11 +6,13 @@ import { routineService } from '@/services/routineService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function CreateRoutineScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const [loading, setLoading] = useState(false);
   
   const [name, setName] = useState('');
@@ -101,21 +103,25 @@ export default function CreateRoutineScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{id ? 'Edit Routine' : 'New Routine'}</Text>
-        <TouchableOpacity onPress={handleSave} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <Text style={styles.saveButton}>Save</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <View style={[
+        styles.contentWrapper,
+        layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' }
+      ]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{id ? 'Edit Routine' : 'New Routine'}</Text>
+          <TouchableOpacity onPress={handleSave} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Text style={styles.saveButton}>Save</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView style={styles.content}>
+        <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.label}>Name *</Text>
           <TextInput
@@ -195,6 +201,7 @@ export default function CreateRoutineScreen() {
           </Text>
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 }
@@ -203,6 +210,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { authService } from '@/services/authService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -21,6 +22,7 @@ export default function ForgotPasswordScreen() {
   const [emailSent, setEmailSent] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
 
   const handleSubmit = async () => {
     if (!email) {
@@ -72,8 +74,15 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
+      <ScrollView contentContainerStyle={[
+        styles.scrollContainer,
+        layout.isWeb && styles.webScrollContainer
+      ]}>
+        <View style={[
+          styles.content, 
+          { paddingTop: insets.top + 40 },
+          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
+        ]}>
           <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
             Enter your email address and we'll send you a link to reset your password.
@@ -198,5 +207,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#4CAF50',
     textAlign: 'center',
+  },
+  webScrollContainer: {
+    minHeight: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
 });
