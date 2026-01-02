@@ -18,6 +18,7 @@ import { exerciseService, ExerciseResponse, MuscleResponse, MuscleGroup } from '
 import EditExerciseModal from '@/components/EditExerciseModal';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { useAuth } from '@/contexts/AuthContext';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function ExercisesScreen() {
   const [exercises, setExercises] = useState<ExerciseResponse[]>([]);
@@ -31,6 +32,7 @@ export default function ExercisesScreen() {
   const [isCreating, setIsCreating] = useState(false);
   const insets = useSafeAreaInsets();
   const { isAdmin, useRemoteServer } = useAuth();
+  const layout = useResponsiveLayout();
 
   // Reload data whenever the screen comes into focus
   useFocusEffect(
@@ -370,56 +372,60 @@ export default function ExercisesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Text style={styles.title}>Exercises</Text>
+      <View style={[
+        styles.contentWrapper,
+        layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' }
+      ]}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+          <Text style={styles.title}>Exercises</Text>
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search exercises..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search exercises..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
 
-        <FlatList
-          horizontal
-          data={muscleGroups}
-          keyExtractor={(item) => item}
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterList}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                selectedMuscleGroup === item && styles.filterButtonActive,
-              ]}
-              onPress={() => setSelectedMuscleGroup(item)}
-            >
-              <Text
+          <FlatList
+            horizontal
+            data={muscleGroups}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterList}
+            renderItem={({ item }) => (
+              <TouchableOpacity
                 style={[
-                  styles.filterButtonText,
-                  selectedMuscleGroup === item && styles.filterButtonTextActive,
+                  styles.filterButton,
+                  selectedMuscleGroup === item && styles.filterButtonActive,
                 ]}
+                onPress={() => setSelectedMuscleGroup(item)}
               >
-                {item}
-              </Text>
+                <Text
+                  style={[
+                    styles.filterButtonText,
+                    selectedMuscleGroup === item && styles.filterButtonTextActive,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+
+          {isAdmin && useRemoteServer && (
+            <TouchableOpacity
+              style={styles.importButton}
+              onPress={handleImportPdf}
+              disabled={importing}
+            >
+              {importing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.importButtonText}>📄 Import PDF</Text>
+              )}
             </TouchableOpacity>
           )}
-        />
-
-        {isAdmin && useRemoteServer && (
-          <TouchableOpacity
-            style={styles.importButton}
-            onPress={handleImportPdf}
-            disabled={importing}
-          >
-            {importing ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.importButtonText}>📄 Import PDF</Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
+        </View>
 
       <FlatList
         data={filteredExercises}
@@ -436,28 +442,29 @@ export default function ExercisesScreen() {
         }
       />
 
-      {isAdmin && (
-        <TouchableOpacity
-          style={[styles.fab, { bottom: insets.bottom + 20 }]}
-          onPress={handleCreateExercise}
-        >
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      )}
+        {isAdmin && (
+          <TouchableOpacity
+            style={[styles.fab, { bottom: insets.bottom + 20 }]}
+            onPress={handleCreateExercise}
+          >
+            <Text style={styles.fabText}>+</Text>
+          </TouchableOpacity>
+        )}
 
-      {editingExercise && (
-        <EditExerciseModal
-          visible={true}
-          exercise={editingExercise}
-          muscles={muscles}
-          onClose={() => {
-            setEditingExercise(null);
-            setIsCreating(false);
-          }}
-          onSave={loadData}
-          isCreating={isCreating}
-        />
-      )}
+        {editingExercise && (
+          <EditExerciseModal
+            visible={true}
+            exercise={editingExercise}
+            muscles={muscles}
+            onClose={() => {
+              setEditingExercise(null);
+              setIsCreating(false);
+            }}
+            onSave={loadData}
+            isCreating={isCreating}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -466,6 +473,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   centerContainer: {
     flex: 1,

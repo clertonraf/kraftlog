@@ -7,6 +7,7 @@ import { routineImportService } from '@/services/routineImportService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function RoutinesScreen() {
   const [routines, setRoutines] = useState<RoutineResponse[]>([]);
@@ -15,6 +16,7 @@ export default function RoutinesScreen() {
   const [importing, setImporting] = useState(false);
   const { user, isOfflineMode, useRemoteServer } = useAuth();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
 
   // Reload routines whenever the screen comes into focus
   useFocusEffect(
@@ -241,31 +243,35 @@ export default function RoutinesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Routines</Text>
-        {useRemoteServer && (
-          <TouchableOpacity
-            style={styles.importButton}
-            onPress={handleImportRoutine}
-            disabled={importing}
-          >
-            {importing ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <>
-                <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
-                <Text style={styles.importButtonText}>Import</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
+      <View style={[
+        styles.contentWrapper,
+        layout.isWeb && { maxWidth: layout.maxContentWidth, alignSelf: 'center', width: '100%' }
+      ]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Routines</Text>
+          {useRemoteServer && (
+            <TouchableOpacity
+              style={styles.importButton}
+              onPress={handleImportRoutine}
+              disabled={importing}
+            >
+              {importing ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <>
+                  <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
+                  <Text style={styles.importButtonText}>Import</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
 
-      <FlatList
-        data={routines}
-        renderItem={renderRoutine}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        <FlatList
+          data={routines}
+          renderItem={renderRoutine}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
         refreshing={refreshing}
         onRefresh={handleRefresh}
         ListEmptyComponent={
@@ -277,12 +283,13 @@ export default function RoutinesScreen() {
         }
       />
 
-      <TouchableOpacity 
-        style={[styles.fab, { bottom: insets.bottom + 20 }]}
-        onPress={() => router.push('/routine/create')}
-      >
-        <Ionicons name="add" size={32} color="#FFF" />
-      </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.fab, { bottom: insets.bottom + 20 }]}
+          onPress={() => router.push('/routine/create')}
+        >
+          <Ionicons name="add" size={32} color="#FFF" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -291,6 +298,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   centerContainer: {
     flex: 1,

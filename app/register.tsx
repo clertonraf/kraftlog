@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -27,6 +28,7 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
 
   const handleRegister = async () => {
     if (!name || !surname || !email || !password) {
@@ -58,8 +60,15 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={[styles.content, { paddingTop: insets.top + 20 }]}>
+      <ScrollView contentContainerStyle={[
+        styles.scrollContainer,
+        layout.isWeb && styles.webScrollContainer
+      ]}>
+        <View style={[
+          styles.content, 
+          { paddingTop: insets.top + 20 },
+          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
+        ]}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join KraftLog today!</Text>
 
@@ -213,5 +222,10 @@ const styles = StyleSheet.create({
   linkBold: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  webScrollContainer: {
+    minHeight: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
 });

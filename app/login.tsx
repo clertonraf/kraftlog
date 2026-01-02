@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { configService } from '@/services/configService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -24,6 +25,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
 
   useEffect(() => {
     loadApiUrl();
@@ -81,8 +83,15 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
+      <ScrollView contentContainerStyle={[
+        styles.scrollContainer,
+        layout.isWeb && styles.webScrollContainer
+      ]}>
+        <View style={[
+          styles.content, 
+          { paddingTop: insets.top + 40 },
+          layout.isWeb && { maxWidth: layout.formMaxWidth, alignSelf: 'center', width: '100%' }
+        ]}>
           <Text style={styles.title}>KraftLog</Text>
           <Text style={styles.subtitle}>Login to sync your data</Text>
 
@@ -271,5 +280,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  webScrollContainer: {
+    minHeight: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
 });
