@@ -191,6 +191,9 @@ export const initDatabase = async () => {
     CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id);
   `);
   
+    // Run migrations
+    await runMigrations(db);
+  
     return db;
   } catch (error) {
     console.error('Failed to initialize database:', error);
@@ -213,5 +216,51 @@ export const closeDatabase = async () => {
   if (db && Platform.OS !== 'web') {
     await db.closeAsync();
     db = null;
+  }
+};
+
+// Migration system
+const runMigrations = async (database: any) => {
+  // Create migrations table if it doesn't exist
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      version INTEGER UNIQUE NOT NULL,
+      applied_at TEXT NOT NULL
+    );
+  `);
+
+  // Get current version
+  const result = await database.getAllAsync('SELECT MAX(version) as version FROM migrations');
+  const currentVersion = result[0]?.version || 0;
+
+  // Migration 1: Add is_active, start_date, end_date to routines table
+  if (currentVersion < 1) {
+    try {
+      // Check if columns already exist
+      const tableInfo = await database.getAllAsync('PRAGMA table_info(routines)');
+      const hasIsActive = tableInfo.some((col: any) => col.name === 'is_active');
+      const hasStartDate = tableInfo.some((col: any) => col.name === 'start_date');
+      const hasEndDate = tableInfo.some((col: any) => col.name === 'end_date');
+
+      if (!hasIsActive) {
+        await database.execAsync('ALTER TABLE routines ADD COLUMN is_active INTEGER DEFAULT 0');
+      }
+      if (!hasStartDate) {
+        await database.execAsync('ALTER TABLE routines ADD COLUMN start_date TEXT');
+      }
+      if (!hasEndDate) {
+        await database.execAsync('ALTER TABLE routines ADD COLUMN end_date TEXT');
+      }
+
+      await database.runAsync(
+        'INSERT INTO migrations (version, applied_at) VALUES (?, ?)',
+        [1, new Date().toISOString()]
+      );
+      console.log('Migration 1 applied: Added routine activation fields');
+    } catch (error) {
+      console.error('Migration 1 failed:', error);
+      throw error;
+    }
   }
 };
