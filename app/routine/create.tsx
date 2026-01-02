@@ -38,15 +38,7 @@ export default function CreateRoutineScreen() {
       return;
     }
 
-    if (!user?.id) {
-      const msg = 'User not found';
-      if (Platform.OS === 'web') {
-        alert(msg);
-      } else {
-        Alert.alert('Error', msg);
-      }
-      return;
-    }
+    const userId = user?.id || 'offline-user';
 
     setLoading(true);
     try {
@@ -55,7 +47,7 @@ export default function CreateRoutineScreen() {
         startDate: formatDate(startDate),
         endDate: formatDate(endDate),
         isActive,
-        userId: user.id,
+        userId,
       };
 
       if (id) {

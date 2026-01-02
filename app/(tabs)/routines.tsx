@@ -24,10 +24,11 @@ export default function RoutinesScreen() {
   );
 
   const loadRoutines = async () => {
-    if (!user?.id) return;
+    // In offline mode, use a default user ID
+    const userId = user?.id || 'offline-user';
     
     try {
-      const data = await routineService.getRoutinesByUserId(user.id);
+      const data = await routineService.getRoutinesByUserId(userId);
       setRoutines(data);
     } catch (error: any) {
       console.error('Error loading routines:', error);
@@ -112,7 +113,7 @@ export default function RoutinesScreen() {
   };
 
   const handleImportRoutine = async () => {
-    if (!user?.id) return;
+    const userId = user?.id || 'offline-user';
 
     try {
       setImporting(true);
@@ -134,7 +135,7 @@ export default function RoutinesScreen() {
       const blob = await response.blob();
       
       // Import the routine
-      const importResult = await routineImportService.importRoutineFromXlsx(blob, user.id);
+      const importResult = await routineImportService.importRoutineFromXlsx(blob, userId);
 
       setImporting(false);
 
