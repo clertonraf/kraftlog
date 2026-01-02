@@ -1,4 +1,6 @@
 import api from './api';
+import { isOfflineMode } from './api';
+import { getDatabase } from './database';
 
 export interface LogSetResponse {
   id: string;
@@ -90,6 +92,92 @@ export const logRoutineService = {
   },
 
   async getLogRoutinesByUserId(userId: string): Promise<LogRoutineResponse[]> {
+    if (await isOfflineMode()) {
+      // Return data from local database
+      const db = await getDatabase();
+      if (!db) return [];
+      
+      try {
+        const logRoutines = await db.getAllAsync<any>(`
+          SELECT * FROM log_routines 
+          WHERE user_id = ? 
+          ORDER BY start_datetime DESC
+        `, [userId]);
+        
+        // Get workouts for each log routine
+        const result = await Promise.all(
+          logRoutines.map(async (logRoutine) => {
+            const logWorkouts = await db.getAllAsync<any>(`
+              SELECT * FROM log_workouts 
+              WHERE log_routine_id = ?
+            `, [logRoutine.id]);
+            
+            // Get exercises for each workout
+            for (const workout of logWorkouts) {
+              const logExercises = await db.getAllAsync<any>(`
+                SELECT * FROM log_exercises 
+                WHERE log_workout_id = ?
+              `, [workout.id]);
+              
+              // Get sets for each exercise
+              for (const exercise of logExercises) {
+                const logSets = await db.getAllAsync<any>(`
+                  SELECT * FROM log_sets 
+                  WHERE log_exercise_id = ?
+                  ORDER BY set_number
+                `, [exercise.id]);
+                
+                exercise.logSets = logSets.map(set => ({
+                  id: set.id,
+                  logExerciseId: set.log_exercise_id,
+                  setNumber: set.set_number,
+                  reps: set.reps,
+                  weightKg: set.weight_kg,
+                  restTimeSeconds: set.rest_time_seconds,
+                  timestamp: set.timestamp,
+                  notes: set.notes,
+                }));
+              }
+              
+              workout.logExercises = logExercises.map(ex => ({
+                id: ex.id,
+                logWorkoutId: ex.log_workout_id,
+                exerciseId: ex.exercise_id,
+                exerciseName: ex.exercise_name,
+                startDatetime: ex.start_datetime,
+                endDatetime: ex.end_datetime,
+                notes: ex.notes,
+                repetitions: ex.repetitions,
+                completed: ex.completed === 1,
+                logSets: ex.logSets,
+              }));
+            }
+            
+            return {
+              id: logRoutine.id,
+              routineId: logRoutine.routine_id,
+              userId: logRoutine.user_id,
+              startDatetime: logRoutine.start_datetime,
+              endDatetime: logRoutine.end_datetime,
+              logWorkouts: logWorkouts.map(w => ({
+                id: w.id,
+                logRoutineId: w.log_routine_id,
+                workoutId: w.workout_id,
+                startDatetime: w.start_datetime,
+                endDatetime: w.end_datetime,
+                logExercises: w.logExercises,
+              })),
+            };
+          })
+        );
+        
+        return result;
+      } catch (error) {
+        console.error('Error loading log routines from local database:', error);
+        return [];
+      }
+    }
+    
     const response = await api.get<LogRoutineResponse[]>(`/log-routines/user/${userId}`);
     return response.data;
   },
@@ -105,6 +193,15 @@ export const logRoutineService = {
   },
 
   async deleteLogRoutine(id: string): Promise<void> {
+    if (await isOfflineMode()) {
+      const db = await getDatabase();
+      if (!db) throw new Error('Database not available');
+      
+      // Delete cascade will handle related records
+      await db.runAsync('DELETE FROM log_routines WHERE id = ?', [id]);
+      return;
+    }
+    
     await api.delete(`/log-routines/${id}`);
   },
 

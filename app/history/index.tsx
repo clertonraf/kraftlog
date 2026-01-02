@@ -17,11 +17,11 @@ export default function HistoryScreen() {
   }, [user?.id]);
 
   const loadHistory = async () => {
-    if (!user?.id) return;
+    const userId = user?.id || 'offline-user';
     
     setLoading(true);
     try {
-      const data = await logRoutineService.getLogRoutinesByUserId(user.id);
+      const data = await logRoutineService.getLogRoutinesByUserId(userId);
       setLogRoutines(data.sort((a, b) => 
         new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime()
       ));
