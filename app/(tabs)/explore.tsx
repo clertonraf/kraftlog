@@ -30,7 +30,7 @@ export default function ExercisesScreen() {
   const [editingExercise, setEditingExercise] = useState<ExerciseResponse | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const insets = useSafeAreaInsets();
-  const { isAdmin } = useAuth();
+  const { isAdmin, useRemoteServer } = useAuth();
 
   // Reload data whenever the screen comes into focus
   useFocusEffect(
@@ -406,7 +406,7 @@ export default function ExercisesScreen() {
           )}
         />
 
-        {isAdmin && (
+        {isAdmin && useRemoteServer && (
           <TouchableOpacity
             style={styles.importButton}
             onPress={handleImportPdf}

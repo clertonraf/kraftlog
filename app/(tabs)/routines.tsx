@@ -13,7 +13,7 @@ export default function RoutinesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [importing, setImporting] = useState(false);
-  const { user } = useAuth();
+  const { user, isOfflineMode, useRemoteServer } = useAuth();
   const insets = useSafeAreaInsets();
 
   // Reload routines whenever the screen comes into focus
@@ -243,20 +243,22 @@ export default function RoutinesScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Routines</Text>
-        <TouchableOpacity
-          style={styles.importButton}
-          onPress={handleImportRoutine}
-          disabled={importing}
-        >
-          {importing ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <>
-              <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
-              <Text style={styles.importButtonText}>Import</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {useRemoteServer && (
+          <TouchableOpacity
+            style={styles.importButton}
+            onPress={handleImportRoutine}
+            disabled={importing}
+          >
+            {importing ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <>
+                <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
+                <Text style={styles.importButtonText}>Import</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
