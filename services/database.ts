@@ -70,9 +70,26 @@ export const initDatabase = async () => {
       name TEXT NOT NULL,
       description TEXT,
       video_url TEXT,
+      equipment_type TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       synced INTEGER DEFAULT 0
+    );
+    
+    -- Muscles table
+    CREATE TABLE IF NOT EXISTS muscles (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      muscle_group TEXT NOT NULL
+    );
+    
+    -- Exercise muscles junction table
+    CREATE TABLE IF NOT EXISTS exercise_muscles (
+      id TEXT PRIMARY KEY,
+      exercise_id TEXT NOT NULL,
+      muscle_id TEXT NOT NULL,
+      FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+      FOREIGN KEY (muscle_id) REFERENCES muscles(id) ON DELETE CASCADE
     );
     
     -- Workout exercises junction table

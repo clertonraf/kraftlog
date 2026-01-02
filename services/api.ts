@@ -26,6 +26,7 @@ const getDefaultApiUrl = () => {
 };
 
 let currentApiUrl = getDefaultApiUrl();
+let isOfflineModeEnabled = false;
 
 console.log('API Configuration:', {
   platform: Platform.OS,
@@ -42,6 +43,9 @@ const api = axios.create({
 
 // Update API URL dynamically
 export const updateApiUrl = async () => {
+  const config = await configService.getConfig();
+  isOfflineModeEnabled = !config.useRemoteServer;
+  
   const configuredUrl = await configService.getApiUrl();
   if (configuredUrl) {
     currentApiUrl = configuredUrl;
@@ -52,6 +56,12 @@ export const updateApiUrl = async () => {
     api.defaults.baseURL = currentApiUrl;
     console.log('API URL reset to default:', currentApiUrl);
   }
+};
+
+// Check if offline mode is enabled
+export const isOfflineMode = async () => {
+  const config = await configService.getConfig();
+  return !config.useRemoteServer;
 };
 
 // Auth error callback for global handling
@@ -83,6 +93,12 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // In offline mode, don't treat errors as auth errors
+    if (isOfflineModeEnabled) {
+      console.log('Offline mode - skipping auth error handling');
+      return Promise.reject(error);
+    }
+    
     // Suppress logging for expected 404s on last workout endpoint
     if (error.response?.status === 404 && error.config?.url?.includes('/last')) {
       return Promise.reject(error);
