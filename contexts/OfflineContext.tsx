@@ -13,7 +13,7 @@ interface OfflineContextType {
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
 
 export function OfflineProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, useRemoteServer } = useAuth();
   const [isInitialized, setIsInitialized] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     lastSync: null,
@@ -22,7 +22,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Initialize database (will be skipped on web)
+    // Always initialize database for offline support
     initDatabase()
       .then(() => {
         console.log('Database initialized');
@@ -54,14 +54,14 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Sync when user logs in and database is initialized
-    if (user && isInitialized) {
+    // Only sync when user logs in, database is initialized, AND using remote server
+    if (user && isInitialized && useRemoteServer) {
       performInitialSync();
     }
-  }, [user, isInitialized]);
+  }, [user, isInitialized, useRemoteServer]);
 
   const performInitialSync = async () => {
-    if (!user) return;
+    if (!user || !useRemoteServer) return;
     
     try {
       console.log('Performing initial sync...');
@@ -78,8 +78,8 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   };
 
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (nextAppState === 'active' && user && isInitialized) {
-      // Sync when app comes to foreground
+    if (nextAppState === 'active' && user && isInitialized && useRemoteServer) {
+      // Sync when app comes to foreground (only if using remote server)
       syncService.syncAll().catch((error) => {
         console.error('Background sync failed:', error);
       });
@@ -87,6 +87,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   };
 
   const sync = async () => {
+    if (!useRemoteServer) {
+      console.log('Offline mode - sync skipped');
+      return;
+    }
     if (!user) {
       throw new Error('User not logged in');
     }

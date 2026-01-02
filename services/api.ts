@@ -2,11 +2,12 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { configService } from './configService';
 
 // For iOS Simulator, use localhost
 // For Android Emulator, use 10.0.2.2 (Android's special alias for host machine)
 // For physical devices, use the actual IP or environment variable
-const getApiUrl = () => {
+const getDefaultApiUrl = () => {
   // Check environment variable first
   const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
   
@@ -24,20 +25,34 @@ const getApiUrl = () => {
   return 'http://localhost:8080/api';
 };
 
-const API_URL = getApiUrl();
+let currentApiUrl = getDefaultApiUrl();
 
 console.log('API Configuration:', {
   platform: Platform.OS,
-  apiUrl: API_URL,
+  apiUrl: currentApiUrl,
   env: process.env.EXPO_PUBLIC_API_URL
 });
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: currentApiUrl,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Update API URL dynamically
+export const updateApiUrl = async () => {
+  const configuredUrl = await configService.getApiUrl();
+  if (configuredUrl) {
+    currentApiUrl = configuredUrl;
+    api.defaults.baseURL = configuredUrl;
+    console.log('API URL updated to:', configuredUrl);
+  } else {
+    currentApiUrl = getDefaultApiUrl();
+    api.defaults.baseURL = currentApiUrl;
+    console.log('API URL reset to default:', currentApiUrl);
+  }
+};
 
 // Auth error callback for global handling
 let onAuthError: (() => void) | null = null;

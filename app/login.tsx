@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,15 +13,26 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { configService } from '@/services/configService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [apiUrl, setApiUrl] = useState('');
   const { login } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    loadApiUrl();
+  }, []);
+
+  const loadApiUrl = async () => {
+    const url = await configService.getApiUrl();
+    setApiUrl(url || '');
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -40,6 +51,23 @@ export default function LoginScreen() {
     }
   };
 
+  const handleUseOffline = () => {
+    Alert.alert(
+      'Use Offline',
+      'Switch to offline mode? You can change this later in settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Use Offline',
+          onPress: async () => {
+            await configService.setOfflineMode();
+            router.replace('/(tabs)');
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -48,7 +76,14 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
           <Text style={styles.title}>KraftLog</Text>
-          <Text style={styles.subtitle}>Welcome back!</Text>
+          <Text style={styles.subtitle}>Login to sync your data</Text>
+
+          {apiUrl && (
+            <View style={styles.serverInfo}>
+              <Text style={styles.serverLabel}>Connected to:</Text>
+              <Text style={styles.serverUrl}>{apiUrl}</Text>
+            </View>
+          )}
 
           <View style={styles.form}>
             <TextInput
@@ -100,6 +135,21 @@ export default function LoginScreen() {
               <Text style={styles.linkText}>
                 Don't have an account? <Text style={styles.linkBold}>Sign up</Text>
               </Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.offlineButton]}
+              onPress={handleUseOffline}
+              disabled={loading}
+              testID="use-offline-button"
+            >
+              <Text style={styles.offlineButtonText}>Use Offline Mode</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -171,5 +221,47 @@ const styles = StyleSheet.create({
   },
   registerLink: {
     marginTop: 10,
+  },
+  serverInfo: {
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  serverLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  serverUrl: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#999',
+    fontSize: 14,
+  },
+  offlineButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+  },
+  offlineButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

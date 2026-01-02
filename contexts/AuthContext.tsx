@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService, UserResponse, LoginRequest, RegisterRequest } from '@/services/authService';
-import { setAuthErrorCallback } from '@/services/api';
+import { setAuthErrorCallback, updateApiUrl } from '@/services/api';
+import { configService } from '@/services/configService';
 import { router } from 'expo-router';
 
 interface AuthContextType {
   user: UserResponse | null;
   loading: boolean;
+  isOfflineMode: boolean;
+  useRemoteServer: boolean;
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -18,9 +21,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [useRemoteServer, setUseRemoteServer] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    initializeAuth();
     
     // Set up global auth error handler
     setAuthErrorCallback(() => {
@@ -35,17 +40,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const checkAuth = async () => {
+  const initializeAuth = async () => {
     try {
-      const isAuth = await authService.isAuthenticated();
-      if (isAuth) {
-        const currentUser = await authService.getCurrentUser();
-        console.log('Current user from storage:', currentUser);
-        console.log('isAdmin value:', currentUser?.admin);
-        setUser(currentUser);
+      // Load configuration
+      const config = await configService.getConfig();
+      setIsOfflineMode(!config.useRemoteServer);
+      setUseRemoteServer(config.useRemoteServer);
+
+      // Update API URL if using remote server
+      if (config.useRemoteServer && config.apiUrl) {
+        await updateApiUrl();
+      }
+
+      // Check authentication only if using remote server
+      if (config.useRemoteServer) {
+        const isAuth = await authService.isAuthenticated();
+        if (isAuth) {
+          const currentUser = await authService.getCurrentUser();
+          console.log('Current user from storage:', currentUser);
+          console.log('isAdmin value:', currentUser?.admin);
+          setUser(currentUser);
+        }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Auth initialization failed:', error);
     } finally {
       setLoading(false);
     }
@@ -71,10 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
+        isOfflineMode,
+        useRemoteServer,
         login,
         register,
         logout,
-        isAuthenticated: !!user,
+        isAuthenticated: useRemoteServer ? !!user : true, // Always authenticated in offline mode
         isAdmin: user?.isAdmin || user?.admin || false,
       }}
     >
