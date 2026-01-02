@@ -143,6 +143,38 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Clear Local Data Button (only in offline mode) */}
+        {isOfflineMode && (
+          <TouchableOpacity
+            style={[styles.button, styles.dangerButton]}
+            onPress={() => {
+              Alert.alert(
+                'Clear Local Data',
+                'This will delete ALL your local exercises, routines, and workouts. This action cannot be undone!',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Clear All Data',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        const { clearAllData } = await import('@/services/database');
+                        await clearAllData();
+                        Alert.alert('Success', 'All local data has been cleared');
+                      } catch (error) {
+                        console.error('Failed to clear data:', error);
+                        Alert.alert('Error', 'Failed to clear local data');
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Text style={styles.dangerButtonText}>🗑️ Clear Local Data</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Server Configuration (only show if using remote server) */}
@@ -393,6 +425,20 @@ const styles = StyleSheet.create({
     borderColor: '#ff3b30',
   },
   logoutButtonText: {
+    color: '#ff3b30',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  dangerButton: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+  },
+  dangerButtonText: {
     color: '#ff3b30',
     fontSize: 16,
     fontWeight: '600',
