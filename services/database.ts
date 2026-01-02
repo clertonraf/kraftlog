@@ -1,14 +1,119 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let db: any | null = null;
 let SQLite: any = null;
 
-export const initDatabase = async () => {
-  // SQLite is not fully supported on web - use in-memory fallback or skip
-  if (Platform.OS === 'web') {
-    console.log('SQLite is not available on web platform - using API only mode');
-    // Return null for web - app will use API directly
+// Web storage keys
+const WEB_STORAGE_PREFIX = 'kraftlog_';
+
+// Simple in-memory store for web
+class WebDatabase {
+  private data: Map<string, any[]> = new Map();
+  private initialized = false;
+
+  async init() {
+    if (this.initialized) return;
+    
+    // Load from AsyncStorage on web
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const kraftlogKeys = keys.filter(k => k.startsWith(WEB_STORAGE_PREFIX));
+      const items = await AsyncStorage.multiGet(kraftlogKeys);
+      
+      items.forEach(([key, value]) => {
+        if (value) {
+          const tableName = key.replace(WEB_STORAGE_PREFIX, '');
+          this.data.set(tableName, JSON.parse(value));
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load web database:', error);
+    }
+    
+    this.initialized = true;
+  }
+
+  async saveTable(tableName: string) {
+    const data = this.data.get(tableName) || [];
+    await AsyncStorage.setItem(`${WEB_STORAGE_PREFIX}${tableName}`, JSON.stringify(data));
+  }
+
+  getTable(tableName: string): any[] {
+    if (!this.data.has(tableName)) {
+      this.data.set(tableName, []);
+    }
+    return this.data.get(tableName)!;
+  }
+
+  async insert(tableName: string, item: any) {
+    const table = this.getTable(tableName);
+    table.push(item);
+    await this.saveTable(tableName);
+    return item;
+  }
+
+  async update(tableName: string, id: string, updates: any) {
+    const table = this.getTable(tableName);
+    const index = table.findIndex(item => item.id === id);
+    if (index !== -1) {
+      table[index] = { ...table[index], ...updates };
+      await this.saveTable(tableName);
+      return table[index];
+    }
     return null;
+  }
+
+  async delete(tableName: string, id: string) {
+    const table = this.getTable(tableName);
+    const index = table.findIndex(item => item.id === id);
+    if (index !== -1) {
+      table.splice(index, 1);
+      await this.saveTable(tableName);
+      return true;
+    }
+    return false;
+  }
+
+  async findAll(tableName: string): Promise<any[]> {
+    return this.getTable(tableName);
+  }
+
+  async findById(tableName: string, id: string): Promise<any | null> {
+    const table = this.getTable(tableName);
+    return table.find(item => item.id === id) || null;
+  }
+
+  async findBy(tableName: string, predicate: (item: any) => boolean): Promise<any[]> {
+    const table = this.getTable(tableName);
+    return table.filter(predicate);
+  }
+
+  async clear(tableName: string) {
+    this.data.set(tableName, []);
+    await this.saveTable(tableName);
+  }
+
+  async clearAll() {
+    const keys = Array.from(this.data.keys());
+    this.data.clear();
+    await Promise.all(
+      keys.map(key => AsyncStorage.removeItem(`${WEB_STORAGE_PREFIX}${key}`))
+    );
+  }
+}
+
+let webDb: WebDatabase | null = null;
+
+export const initDatabase = async () => {
+  // Use WebDatabase for web platform
+  if (Platform.OS === 'web') {
+    console.log('Initializing web database using AsyncStorage');
+    if (!webDb) {
+      webDb = new WebDatabase();
+      await webDb.init();
+    }
+    return webDb;
   }
   
   // Dynamically import SQLite only on native platforms
@@ -203,7 +308,10 @@ export const initDatabase = async () => {
 
 export const getDatabase = async () => {
   if (Platform.OS === 'web') {
-    return null;
+    if (!webDb) {
+      return await initDatabase();
+    }
+    return webDb;
   }
   
   if (!db) {
@@ -213,7 +321,12 @@ export const getDatabase = async () => {
 };
 
 export const closeDatabase = async () => {
-  if (db && Platform.OS !== 'web') {
+  if (Platform.OS === 'web') {
+    // Web database doesn't need closing - data is persisted to AsyncStorage
+    return;
+  }
+  
+  if (db) {
     await db.closeAsync();
     db = null;
   }
@@ -221,7 +334,9 @@ export const closeDatabase = async () => {
 
 export const clearAllData = async () => {
   if (Platform.OS === 'web') {
-    console.log('Cannot clear database on web platform');
+    if (webDb) {
+      await webDb.clearAll();
+    }
     return;
   }
   

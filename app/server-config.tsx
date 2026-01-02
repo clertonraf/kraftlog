@@ -96,31 +96,35 @@ export default function ServerConfigScreen() {
             Choose how you want to use the app
           </Text>
 
-          <View style={styles.optionContainer}>
-            <Text style={styles.optionTitle}>🏠 Offline Mode</Text>
-            <Text style={styles.optionDescription}>
-              Use the app without a server. All your data will be stored locally on this device.
-            </Text>
-            <TouchableOpacity
-              style={[styles.button, styles.offlineButton, loading && styles.buttonDisabled]}
-              onPress={handleOfflineMode}
-              disabled={loading}
-              testID="offline-mode-button"
-            >
-              <Text style={styles.buttonText}>Use Offline</Text>
-            </TouchableOpacity>
-          </View>
+          {Platform.OS !== 'web' && (
+            <>
+              <View style={styles.optionContainer}>
+                <Text style={styles.optionTitle}>🏠 Offline Mode</Text>
+                <Text style={styles.optionDescription}>
+                  Use the app without a server. All your data will be stored locally on this device.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.button, styles.offlineButton, loading && styles.buttonDisabled]}
+                  onPress={handleOfflineMode}
+                  disabled={loading}
+                  testID="offline-mode-button"
+                >
+                  <Text style={styles.buttonText}>Use Offline</Text>
+                </TouchableOpacity>
+              </View>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          )}
 
           <View style={styles.optionContainer}>
             <Text style={styles.optionTitle}>☁️ Remote Server</Text>
             <Text style={styles.optionDescription}>
-              Connect to a server to sync your data across devices. You'll need to login or register.
+              Connect to a server to sync your data across devices. {Platform.OS === 'web' ? 'Server connection is required for web version.' : "You'll need to login or register."}
             </Text>
             
             <TextInput
@@ -145,9 +149,16 @@ export default function ServerConfigScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.footerText}>
-            You can change this setting later in the app settings.
-          </Text>
+          {Platform.OS !== 'web' && (
+            <Text style={styles.footerText}>
+              You can change this setting later in the app settings.
+            </Text>
+          )}
+          {Platform.OS === 'web' && (
+            <Text style={styles.footerText}>
+              Note: Offline mode is not available on web. Please connect to a server to use the app.
+            </Text>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
