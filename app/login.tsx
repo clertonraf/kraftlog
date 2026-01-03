@@ -99,13 +99,15 @@ export default function LoginScreen() {
                   <Text style={styles.serverLabel}>Connected to:</Text>
                   <Text style={styles.serverUrl}>{apiUrl}</Text>
                 </View>
-                <TouchableOpacity
-                  onPress={() => router.push('/server-config')}
-                  style={styles.changeServerButton}
-                  disabled={loading}
-                >
-                  <Text style={styles.changeServerButtonText}>Change</Text>
-                </TouchableOpacity>
+                {Platform.OS !== 'web' && (
+                  <TouchableOpacity
+                    onPress={() => router.push('/server-config')}
+                    style={styles.changeServerButton}
+                    disabled={loading}
+                  >
+                    <Text style={styles.changeServerButtonText}>Change</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
@@ -162,20 +164,24 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
+            {Platform.OS !== 'web' && (
+              <>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>OR</Text>
+                  <View style={styles.dividerLine} />
+                </View>
 
-            <TouchableOpacity
-              style={[styles.offlineButton]}
-              onPress={handleUseOffline}
-              disabled={loading}
-              testID="use-offline-button"
-            >
-              <Text style={styles.offlineButtonText}>Use Offline Mode</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.offlineButton]}
+                  onPress={handleUseOffline}
+                  disabled={loading}
+                  testID="use-offline-button"
+                >
+                  <Text style={styles.offlineButtonText}>Use Offline Mode</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </ScrollView>

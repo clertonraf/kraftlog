@@ -49,6 +49,16 @@ export default function SettingsScreen() {
   };
 
   const handleSwitchMode = () => {
+    // On web, offline mode is not supported
+    if (Platform.OS === 'web' && !isOfflineMode) {
+      if (
+        confirm('Offline mode is not supported on web. You can only change the remote server URL.')
+      ) {
+        setIsEditing(true);
+      }
+      return;
+    }
+
     const switchToMode = isOfflineMode ? 'remote server' : 'offline';
     const message = `Switch to ${switchToMode} mode? ${Platform.OS === 'web' ? 'The page will reload.' : 'This will restart the app.'}`;
 
@@ -126,64 +136,77 @@ export default function SettingsScreen() {
     >
       <Text style={styles.title}>Settings</Text>
 
-      {/* Mode Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mode</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.rowContent}>
-              <Text style={styles.label}>
-                {isOfflineMode ? '🏠 Offline Mode' : '☁️ Remote Server'}
-              </Text>
-              <Text style={styles.description}>
-                {isOfflineMode ? 'All data stored locally' : 'Data synced with server'}
-              </Text>
+      {/* Mode Section - Hide on web */}
+      {Platform.OS !== 'web' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Mode</Text>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.rowContent}>
+                <Text style={styles.label}>
+                  {isOfflineMode ? '🏠 Offline Mode' : '☁️ Remote Server'}
+                </Text>
+                <Text style={styles.description}>
+                  {isOfflineMode ? 'All data stored locally' : 'Data synced with server'}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.changeButton} onPress={handleSwitchMode}>
+                <Text style={styles.changeButtonText}>Change</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.changeButton} onPress={handleSwitchMode}>
-              <Text style={styles.changeButtonText}>Change</Text>
-            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Clear Local Data Button (only in offline mode) */}
-        {isOfflineMode && (
-          <TouchableOpacity
-            style={[styles.button, styles.dangerButton]}
-            onPress={() => {
-              Alert.alert(
-                'Clear Local Data',
-                'This will delete ALL your local exercises, routines, and workouts. This action cannot be undone!',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Clear All Data',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        const { clearAllData } = await import('@/services/database');
-                        await clearAllData();
-                        Alert.alert('Success', 'All local data has been cleared');
-                      } catch (error) {
-                        console.error('Failed to clear data:', error);
-                        Alert.alert('Error', 'Failed to clear local data');
-                      }
+          {/* Clear Local Data Button (only in offline mode) */}
+          {isOfflineMode && (
+            <TouchableOpacity
+              style={[styles.button, styles.dangerButton]}
+              onPress={() => {
+                Alert.alert(
+                  'Clear Local Data',
+                  'This will delete ALL your local exercises, routines, and workouts. This action cannot be undone!',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Clear All Data',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          const { clearAllData } = await import('@/services/database');
+                          await clearAllData();
+                          Alert.alert('Success', 'All local data has been cleared');
+                        } catch (error) {
+                          console.error('Failed to clear data:', error);
+                          Alert.alert('Error', 'Failed to clear local data');
+                        }
+                      },
                     },
-                  },
-                ]
-              );
-            }}
-          >
-            <Text style={styles.dangerButtonText}>🗑️ Clear Local Data</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.dangerButtonText}>🗑️ Clear Local Data</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Server Configuration (only show if using remote server) */}
       {useRemoteServer && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Server Configuration</Text>
           <View style={styles.card}>
-            {!isEditing ? (
+            {Platform.OS === 'web' ? (
+              <View>
+                <View style={styles.rowContent}>
+                  <Text style={styles.label}>Server URL</Text>
+                  <Text style={styles.value}>{apiUrl || 'Not configured'}</Text>
+                </View>
+                <Text style={styles.helpText}>
+                  On web, the server URL is configured via the EXPO_PUBLIC_API_URL environment
+                  variable.
+                </Text>
+              </View>
+            ) : !isEditing ? (
               <View style={styles.row}>
                 <View style={styles.rowContent}>
                   <Text style={styles.label}>Server URL</Text>
@@ -448,5 +471,11 @@ const styles = StyleSheet.create({
   adminBadge: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });

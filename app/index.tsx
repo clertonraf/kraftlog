@@ -1,7 +1,9 @@
+import Constants from 'expo-constants';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import { useCallback, useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { updateApiUrl } from '@/services/api';
 import { configService } from '@/services/configService';
 
 export default function Index() {
@@ -10,6 +12,29 @@ export default function Index() {
   const rootNavigationState = useRootNavigationState();
 
   const checkAndRedirect = useCallback(async () => {
+    // On web, auto-configure from environment variable
+    if (Platform.OS === 'web') {
+      const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
+
+      if (!envUrl) {
+        console.error('EXPO_PUBLIC_API_URL not set for web platform');
+        // Still need to set remote server mode even without URL
+      }
+
+      // Auto-configure remote server for web
+      await configService.setRemoteServer(envUrl || '');
+      await updateApiUrl();
+
+      // Go to login if not authenticated, otherwise to tabs
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/login');
+      }
+      return;
+    }
+
+    // Mobile flow - check if configured
     const isConfigured = await configService.isConfigured();
 
     if (!isConfigured) {

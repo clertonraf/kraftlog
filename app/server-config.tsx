@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { updateApiUrl } from '@/services/api';
 import { configService } from '@/services/configService';
 
 export default function ServerConfigScreen() {
@@ -34,8 +35,13 @@ export default function ServerConfigScreen() {
   }, []);
 
   useEffect(() => {
+    // Web users should not access this screen - redirect to login
+    if (Platform.OS === 'web') {
+      router.replace('/login');
+      return;
+    }
     loadCurrentConfig();
-  }, [loadCurrentConfig]);
+  }, [loadCurrentConfig, router]);
 
   const handleOfflineMode = async () => {
     if (isReconfiguring) {
@@ -104,6 +110,8 @@ export default function ServerConfigScreen() {
     setLoading(true);
     try {
       await configService.setRemoteServer(apiUrl.trim());
+      // Update the API URL in the axios instance
+      await updateApiUrl();
 
       if (isReconfiguring) {
         // If reconfiguring, clear auth and go to login
@@ -190,10 +198,8 @@ export default function ServerConfigScreen() {
           <View style={styles.optionContainer}>
             <Text style={styles.optionTitle}>☁️ Remote Server</Text>
             <Text style={styles.optionDescription}>
-              Connect to a server to sync your data across devices.{' '}
-              {Platform.OS === 'web'
-                ? 'Server connection is required for web version.'
-                : "You'll need to login or register."}
+              Connect to a server to sync your data across devices. You'll need to login or
+              register.
             </Text>
 
             <TextInput
@@ -218,7 +224,7 @@ export default function ServerConfigScreen() {
             </TouchableOpacity>
           </View>
 
-          {Platform.OS !== 'web' && !isReconfiguring && (
+          {!isReconfiguring && (
             <Text style={styles.footerText}>
               You can change this setting later in the app settings.
             </Text>
@@ -231,11 +237,6 @@ export default function ServerConfigScreen() {
             >
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-          )}
-          {Platform.OS === 'web' && (
-            <Text style={styles.footerText}>
-              Note: Offline mode is not available on web. Please connect to a server to use the app.
-            </Text>
           )}
         </View>
       </ScrollView>

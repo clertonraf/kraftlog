@@ -37,9 +37,10 @@ export const configService = {
   },
 
   async setOfflineMode(): Promise<void> {
-    // Don't allow offline mode on web
+    // Don't allow offline mode on web - instead set remote server with default URL
     if (typeof window !== 'undefined') {
-      throw new Error('Offline mode is not supported on web platform');
+      console.warn('Offline mode not supported on web - using remote server mode');
+      return;
     }
 
     const config: AppConfig = {
