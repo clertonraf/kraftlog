@@ -50,3 +50,4 @@ app-example
 /tmp
 coverage/
 babel.config.test.js
+dist
