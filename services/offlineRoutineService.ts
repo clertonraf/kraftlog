@@ -24,23 +24,37 @@ const transformRoutine = (routine: any) => ({
 });
 
 class OfflineRoutineService {
+  // Helper method to check database availability
+  private async checkDatabase() {
+    const db = await getDatabase();
+    if (!db) {
+      throw new Error('Database not available on this platform (web not supported)');
+    }
+    return db;
+  }
+
   // Get all routines for a user from local database
   async getRoutinesByUserId(userId: string, _online = false): Promise<any[]> {
-    const db = await getDatabase();
+    try {
+      const db = await this.checkDatabase();
 
-    // Get from local DB
-    const routines = (await db.getAllAsync(
-      'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
-      [userId]
-    )) as RoutineLocal[];
+      // Get from local DB
+      const routines = (await db.getAllAsync(
+        'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
+        [userId]
+      )) as RoutineLocal[];
 
-    // Transform to camelCase
-    return routines.map(transformRoutine);
+      // Transform to camelCase
+      return routines.map(transformRoutine);
+    } catch (error: any) {
+      console.log('Error loading routines:', error.message);
+      return [];
+    }
   }
 
   // Get routine by ID from local database
   async getRoutineById(id: string): Promise<any> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
 
     const routine = await db.getFirstAsync('SELECT * FROM routines WHERE id = ?', [id]);
 
@@ -74,7 +88,7 @@ class OfflineRoutineService {
 
   // Create routine (save locally and queue for sync)
   async createRoutine(data: any): Promise<any> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
     const id = uuidv4();
     const now = new Date().toISOString();
 
@@ -116,7 +130,7 @@ class OfflineRoutineService {
 
   // Update routine
   async updateRoutine(id: string, data: any): Promise<any> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
     const now = new Date().toISOString();
 
     // Build update query dynamically based on provided fields
@@ -164,7 +178,7 @@ class OfflineRoutineService {
   // Activate routine (deactivate all others first)
   async activateRoutine(id: string): Promise<any> {
     console.log('[offlineRoutineService] Activating routine:', id);
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
 
     // First, deactivate all routines
     console.log('[offlineRoutineService] Deactivating all routines');
@@ -182,7 +196,7 @@ class OfflineRoutineService {
 
   // Delete routine
   async deleteRoutine(id: string): Promise<void> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
 
     // Delete from local database (cascade will handle related records)
     await db.runAsync('DELETE FROM routines WHERE id = ?', [id]);
@@ -198,7 +212,7 @@ class OfflineRoutineService {
 
   // Create workout
   async createWorkout(data: any): Promise<any> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
     const id = uuidv4();
     const now = new Date().toISOString();
 
@@ -230,7 +244,7 @@ class OfflineRoutineService {
 
   // Update workout
   async updateWorkout(id: string, data: any): Promise<any> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
     const now = new Date().toISOString();
 
     await db.runAsync(
@@ -253,7 +267,7 @@ class OfflineRoutineService {
 
   // Delete workout
   async deleteWorkout(id: string): Promise<void> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
 
     // Delete from local database (cascade will handle related records)
     await db.runAsync('DELETE FROM workouts WHERE id = ?', [id]);
@@ -269,7 +283,7 @@ class OfflineRoutineService {
 
   // Get workout by ID
   async getWorkoutById(id: string): Promise<any> {
-    const db = await getDatabase();
+    const db = await this.checkDatabase();
 
     const workout = await db.getFirstAsync('SELECT * FROM workouts WHERE id = ?', [id]);
 
