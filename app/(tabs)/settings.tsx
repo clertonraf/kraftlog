@@ -17,7 +17,8 @@ import { configService } from '@/services/configService';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout, useRemoteServer, isOfflineMode } = useAuth();
+  const auth = useAuth();
+  const { user, logout, useRemoteServer, isOfflineMode } = auth;
   const router = useRouter();
   const [apiUrl, setApiUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -48,29 +49,40 @@ export default function SettingsScreen() {
   };
 
   const handleSwitchMode = () => {
-    Alert.alert(
-      'Change Mode',
-      `Switch to ${isOfflineMode ? 'remote server' : 'offline'} mode? This will restart the app.`,
-      [
+    const switchToMode = isOfflineMode ? 'remote server' : 'offline';
+    const message = `Switch to ${switchToMode} mode? ${Platform.OS === 'web' ? 'The page will reload.' : 'This will restart the app.'}`;
+
+    const confirmSwitch = async () => {
+      if (isOfflineMode) {
+        // Switching from offline to remote
+        await configService.clearConfig();
+        if (Platform.OS === 'web') {
+          window.location.href = '/server-config';
+        } else {
+          router.replace('/server-config');
+        }
+      } else {
+        // Switching from remote to offline
+        await configService.setOfflineMode();
+        await logout();
+        if (Platform.OS === 'web') {
+          window.location.href = '/';
+        } else {
+          router.replace('/');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm(message)) {
+        confirmSwitch();
+      }
+    } else {
+      Alert.alert('Change Mode', message, [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Switch',
-          onPress: async () => {
-            if (isOfflineMode) {
-              router.replace('/server-config');
-            } else {
-              await configService.setOfflineMode();
-              Alert.alert('Offline Mode', 'Switched to offline mode. Restarting...', [
-                {
-                  text: 'OK',
-                  onPress: () => router.replace('/'),
-                },
-              ]);
-            }
-          },
-        },
-      ]
-    );
+        { text: 'Switch', onPress: confirmSwitch },
+      ]);
+    }
   };
 
   const handleUpdateApiUrl = async () => {

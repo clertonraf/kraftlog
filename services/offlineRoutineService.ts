@@ -36,13 +36,36 @@ class OfflineRoutineService {
   // Get all routines for a user from local database
   async getRoutinesByUserId(userId: string, _online = false): Promise<any[]> {
     try {
-      const db = await this.checkDatabase();
+      const db = await getDatabase();
+      if (!db) {
+        console.log('Database not available (web platform or not initialized)');
+        return [];
+      }
 
-      // Get from local DB
-      const routines = (await db.getAllAsync(
-        'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
-        [userId]
-      )) as RoutineLocal[];
+      // Check if db has getAllAsync method (SQLite) or custom methods (Web)
+      let routines: any[];
+      if (typeof db.getAllAsync === 'function') {
+        // SQLite database (native)
+        routines = (await db.getAllAsync(
+          'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
+          [userId]
+        )) as RoutineLocal[];
+      } else if (typeof db.findBy === 'function') {
+        // Web database
+        routines = await db.findBy(
+          'routines',
+          (r: any) => r.userId === userId || r.user_id === userId
+        );
+        // Sort by created_at DESC
+        routines.sort((a: any, b: any) => {
+          const dateA = new Date(a.createdAt || a.created_at);
+          const dateB = new Date(b.createdAt || b.created_at);
+          return dateB.getTime() - dateA.getTime();
+        });
+      } else {
+        console.log('Unknown database type');
+        return [];
+      }
 
       // Transform to camelCase
       return routines.map(transformRoutine);
