@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -67,11 +67,7 @@ export default function WorkoutSessionScreen() {
   const [showVideo, setShowVideo] = useState(false);
   const [showPreviousData, setShowPreviousData] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!workoutId || !logRoutineId) return;
 
     setLoading(true);
@@ -116,7 +112,11 @@ export default function WorkoutSessionScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [workoutId, logRoutineId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAddSet = async () => {
     if (!logWorkout || (!untilFailure && !newSetReps) || (useWeight && !newSetWeight)) return;
@@ -423,7 +423,7 @@ export default function WorkoutSessionScreen() {
           <View style={styles.videoContainer}>
             {Platform.OS === 'web' ? (
               <iframe
-                title={`Exercise video: ${currentExercise.name}`}
+                title={`Exercise video: ${currentExercise.exerciseName}`}
                 width="100%"
                 height="250"
                 src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentExercise.videoUrl)}`}

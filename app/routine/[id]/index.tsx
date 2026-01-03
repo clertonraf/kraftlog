@@ -33,13 +33,7 @@ export default function RoutineDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('workouts');
 
-  useFocusEffect(
-    useCallback(() => {
-      loadRoutine();
-    }, [loadRoutine])
-  );
-
-  const loadRoutine = async () => {
+  const loadRoutine = useCallback(async () => {
     if (!id) return;
 
     setLoading(true);
@@ -63,7 +57,13 @@ export default function RoutineDetailsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRoutine();
+    }, [loadRoutine])
+  );
 
   const handleDeleteWorkout = async (workoutId: string) => {
     const confirmDelete = async () => {

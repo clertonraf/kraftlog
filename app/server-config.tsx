@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -23,11 +23,7 @@ export default function ServerConfigScreen() {
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
 
-  useEffect(() => {
-    loadCurrentConfig();
-  }, [loadCurrentConfig]);
-
-  const loadCurrentConfig = async () => {
+  const loadCurrentConfig = useCallback(async () => {
     const config = await configService.getConfig();
     if (config.isConfigured) {
       setIsReconfiguring(true);
@@ -35,7 +31,11 @@ export default function ServerConfigScreen() {
         setApiUrl(config.apiUrl);
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadCurrentConfig();
+  }, [loadCurrentConfig]);
 
   const handleOfflineMode = async () => {
     if (isReconfiguring) {

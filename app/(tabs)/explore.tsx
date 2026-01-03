@@ -36,10 +36,10 @@ export default function ExercisesScreen() {
   const [editingExercise, setEditingExercise] = useState<ExerciseResponse | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const insets = useSafeAreaInsets();
-  const { isAdmin, useRemoteServer } = useAuth();
+  const { isAdmin } = useAuth();
   const layout = useResponsiveLayout();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       console.log('=== LOADING DATA ===');
       console.log('Loading exercises and muscles...');
@@ -62,9 +62,21 @@ export default function ExercisesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const filterExercises = () => {
+  // Reload data whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  useEffect(() => {
+    console.log('Filtering exercises...');
+    console.log('Total exercises:', exercises.length);
+    console.log('Search query:', searchQuery);
+    console.log('Selected muscle group:', selectedMuscleGroup);
+
     let filtered = exercises;
 
     if (searchQuery) {
@@ -79,22 +91,7 @@ export default function ExercisesScreen() {
 
     console.log('Filtered exercises:', filtered.length);
     setFilteredExercises(filtered);
-  };
-
-  // Reload data whenever the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
-
-  useEffect(() => {
-    console.log('Filtering exercises...');
-    console.log('Total exercises:', exercises.length);
-    console.log('Search query:', searchQuery);
-    console.log('Selected muscle group:', selectedMuscleGroup);
-    filterExercises();
-  }, [searchQuery, selectedMuscleGroup, exercises, filterExercises]);
+  }, [searchQuery, selectedMuscleGroup, exercises]);
 
   const handleImportPdf = async () => {
     console.log('=== IMPORT PDF STARTED ===');

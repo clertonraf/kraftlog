@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import type React from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { setAuthErrorCallback, updateApiUrl } from '@/services/api';
 import {
   authService,
@@ -30,23 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [useRemoteServer, setUseRemoteServer] = useState(false);
 
-  useEffect(() => {
-    initializeAuth();
-
-    // Set up global auth error handler
-    setAuthErrorCallback(() => {
-      console.log('Auth error detected - logging out');
-      setUser(null);
-      // Navigate to login screen
-      try {
-        router.replace('/login');
-      } catch (error) {
-        console.error('Failed to navigate to login:', error);
-      }
-    });
-  }, [initializeAuth]);
-
-  const initializeAuth = async () => {
+  const initializeAuth = useCallback(async () => {
     try {
       // Load configuration
       const config = await configService.getConfig();
@@ -73,7 +57,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    initializeAuth();
+
+    // Set up global auth error handler
+    setAuthErrorCallback(() => {
+      console.log('Auth error detected - logging out');
+      setUser(null);
+      // Navigate to login screen
+      try {
+        router.replace('/login');
+      } catch (error) {
+        console.error('Failed to navigate to login:', error);
+      }
+    });
+  }, [initializeAuth]);
 
   const login = async (data: LoginRequest) => {
     const response = await authService.login(data);

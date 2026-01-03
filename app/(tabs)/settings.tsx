@@ -17,22 +17,21 @@ import { configService } from '@/services/configService';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout, useRemoteServer } = useAuth();
+  const { user, logout, useRemoteServer, isOfflineMode } = useAuth();
   const router = useRouter();
   const [apiUrl, setApiUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const loadConfig = async () => {
-    const config = await configService.getConfig();
-    if (config.apiUrl) {
-      setApiUrl(config.apiUrl);
-    }
-  };
-
   useEffect(() => {
+    const loadConfig = async () => {
+      const config = await configService.getConfig();
+      if (config.apiUrl) {
+        setApiUrl(config.apiUrl);
+      }
+    };
     loadConfig();
-  }, [loadConfig]);
+  }, []);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -197,8 +196,11 @@ export default function SettingsScreen() {
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
                     style={[styles.button, styles.cancelButton]}
-                    onPress={() => {
-                      loadConfig();
+                    onPress={async () => {
+                      const config = await configService.getConfig();
+                      if (config.apiUrl) {
+                        setApiUrl(config.apiUrl);
+                      }
                       setIsEditing(false);
                     }}
                   >

@@ -27,13 +27,7 @@ export default function WorkoutDetailsScreen() {
   const [workout, setWorkout] = useState<WorkoutResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadWorkout();
-    }, [loadWorkout])
-  );
-
-  const loadWorkout = async () => {
+  const loadWorkout = useCallback(async () => {
     if (!id) return;
 
     setLoading(true);
@@ -51,7 +45,13 @@ export default function WorkoutDetailsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadWorkout();
+    }, [loadWorkout])
+  );
 
   const handleDeleteExercise = async (exerciseId: string) => {
     if (!workout) return;

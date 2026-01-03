@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -27,14 +27,14 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
 
+  const loadApiUrl = useCallback(async () => {
+    const url = await configService.getApiUrl();
+    setApiUrl(url || '');
+  }, []);
+
   useEffect(() => {
     loadApiUrl();
   }, [loadApiUrl]);
-
-  const loadApiUrl = async () => {
-    const url = await configService.getApiUrl();
-    setApiUrl(url || '');
-  };
 
   const handleLogin = async () => {
     if (!email || !password) {

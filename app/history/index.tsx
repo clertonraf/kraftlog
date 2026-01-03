@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,11 +21,7 @@ export default function HistoryScreen() {
   const [logRoutines, setLogRoutines] = useState<LogRoutineResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     const userId = user?.id || 'offline-user';
 
     setLoading(true);
@@ -46,7 +42,11 @@ export default function HistoryScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const handleDeleteWorkout = async (logRoutineId: string, date: string) => {
     if (Platform.OS === 'web') {

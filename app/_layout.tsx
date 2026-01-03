@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { OfflineProvider } from '@/contexts/OfflineContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -15,18 +15,18 @@ function RootLayoutNav() {
   const router = useRouter();
   const [configChecked, setConfigChecked] = useState(false);
 
-  useEffect(() => {
-    checkInitialConfig();
-  }, [checkInitialConfig]);
-
-  const checkInitialConfig = async () => {
+  const checkInitialConfig = useCallback(async () => {
     const isConfigured = await configService.isConfigured();
     setConfigChecked(true);
 
     if (!isConfigured) {
       router.replace('/server-config');
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    checkInitialConfig();
+  }, [checkInitialConfig]);
 
   useEffect(() => {
     if (loading || !configChecked) return;

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -54,17 +54,7 @@ export default function CreateWorkoutScreen() {
   const [newExerciseVideoUrl, setNewExerciseVideoUrl] = useState('');
   const [creatingExercise, setCreatingExercise] = useState(false);
 
-  useEffect(() => {
-    loadExercises();
-  }, [loadExercises]);
-
-  useEffect(() => {
-    if (id && allExercises.length > 0) {
-      loadWorkout();
-    }
-  }, [id, allExercises, loadWorkout]);
-
-  const loadExercises = async () => {
+  const loadExercises = useCallback(async () => {
     try {
       const exercises = await exerciseService.getAllExercises();
       setAllExercises(exercises);
@@ -73,9 +63,9 @@ export default function CreateWorkoutScreen() {
     } finally {
       setLoadingExercises(false);
     }
-  };
+  }, []);
 
-  const loadWorkout = async () => {
+  const loadWorkout = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -101,7 +91,17 @@ export default function CreateWorkoutScreen() {
     } catch (error: any) {
       console.error('Error loading workout:', error);
     }
-  };
+  }, [id, allExercises]);
+
+  useEffect(() => {
+    loadExercises();
+  }, [loadExercises]);
+
+  useEffect(() => {
+    if (id && allExercises.length > 0) {
+      loadWorkout();
+    }
+  }, [id, allExercises, loadWorkout]);
 
   const filteredExercises = allExercises.filter(
     (exercise) =>

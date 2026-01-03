@@ -27,7 +27,7 @@ export default function RoutinesScreen() {
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
 
-  const loadRoutines = async () => {
+  const loadRoutines = useCallback(async () => {
     // In offline mode, use a default user ID
     const userId = user?.id || 'offline-user';
 
@@ -61,7 +61,7 @@ export default function RoutinesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user?.id]);
 
   // Reload routines whenever the screen comes into focus
   useFocusEffect(

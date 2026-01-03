@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -30,11 +30,7 @@ export default function StartRoutineScreen() {
   const [loading, setLoading] = useState(true);
   const [_starting, setStarting] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return;
 
     setLoading(true);
@@ -56,7 +52,11 @@ export default function StartRoutineScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleStartWorkout = async (workoutId: string) => {
     if (!user?.id || !id) return;

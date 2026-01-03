@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { initDatabase } from '@/services/database';
 import { type SyncStatus, syncService } from '@/services/syncService';
@@ -20,6 +20,35 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     isSyncing: false,
     pendingChanges: 0,
   });
+
+  const performInitialSync = useCallback(async () => {
+    if (!user || !useRemoteServer) return;
+
+    try {
+      console.log('Performing initial sync...');
+      // On web, only pull from server (no local database sync)
+      if (Platform.OS === 'web') {
+        console.log('Web platform - skipping local database sync');
+      } else {
+        await syncService.pullFromServer(user.id);
+        await syncService.syncAll();
+      }
+    } catch (error) {
+      console.error('Initial sync failed:', error);
+    }
+  }, [user, useRemoteServer]);
+
+  const handleAppStateChange = useCallback(
+    (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && user && isInitialized && useRemoteServer) {
+        // Sync when app comes to foreground (only if using remote server)
+        syncService.syncAll().catch((error) => {
+          console.error('Background sync failed:', error);
+        });
+      }
+    },
+    [user, isInitialized, useRemoteServer]
+  );
 
   useEffect(() => {
     // Always initialize database for offline support
@@ -59,32 +88,6 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       performInitialSync();
     }
   }, [user, isInitialized, useRemoteServer, performInitialSync]);
-
-  const performInitialSync = async () => {
-    if (!user || !useRemoteServer) return;
-
-    try {
-      console.log('Performing initial sync...');
-      // On web, only pull from server (no local database sync)
-      if (Platform.OS === 'web') {
-        console.log('Web platform - skipping local database sync');
-      } else {
-        await syncService.pullFromServer(user.id);
-        await syncService.syncAll();
-      }
-    } catch (error) {
-      console.error('Initial sync failed:', error);
-    }
-  };
-
-  const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (nextAppState === 'active' && user && isInitialized && useRemoteServer) {
-      // Sync when app comes to foreground (only if using remote server)
-      syncService.syncAll().catch((error) => {
-        console.error('Background sync failed:', error);
-      });
-    }
-  };
 
   const sync = async () => {
     if (!useRemoteServer) {

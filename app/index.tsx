@@ -1,5 +1,5 @@
 import { useRootNavigationState, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { configService } from '@/services/configService';
@@ -9,13 +9,7 @@ export default function Index() {
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
 
-  useEffect(() => {
-    if (!rootNavigationState?.key || loading) return;
-
-    checkAndRedirect();
-  }, [loading, rootNavigationState?.key, checkAndRedirect]);
-
-  const checkAndRedirect = async () => {
+  const checkAndRedirect = useCallback(async () => {
     const isConfigured = await configService.isConfigured();
 
     if (!isConfigured) {
@@ -28,7 +22,13 @@ export default function Index() {
       // Offline mode - go directly to tabs
       router.replace('/(tabs)');
     }
-  };
+  }, [isAuthenticated, router, useRemoteServer]);
+
+  useEffect(() => {
+    if (!rootNavigationState?.key || loading) return;
+
+    checkAndRedirect();
+  }, [loading, rootNavigationState?.key, checkAndRedirect]);
 
   return (
     <View style={styles.container}>

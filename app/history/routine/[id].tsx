@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,11 +20,7 @@ export default function RoutineHistoryDetailScreen() {
   const [logRoutine, setLogRoutine] = useState<LogRoutineResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return;
 
     setLoading(true);
@@ -43,7 +39,11 @@ export default function RoutineHistoryDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
