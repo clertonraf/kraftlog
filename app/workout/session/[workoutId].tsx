@@ -470,8 +470,8 @@ export default function WorkoutSessionScreen() {
                     year: 'numeric',
                   })}
                 </Text>
-                {getPreviousExerciseData(currentExercise.exerciseId)?.logSets?.map((set, idx) => (
-                  <View key={idx} style={styles.previousSetItem}>
+                {getPreviousExerciseData(currentExercise.exerciseId)?.logSets?.map((set) => (
+                  <View key={`prev-${set.setNumber}`} style={styles.previousSetItem}>
                     <Text style={styles.previousSetLabel}>Set {set.setNumber}:</Text>
                     <Text style={styles.previousSetValue}>
                       {set.reps} reps × {set.weightKg} kg
@@ -487,7 +487,7 @@ export default function WorkoutSessionScreen() {
           <Text style={styles.sectionTitle}>Sets ({currentExercise.sets.length})</Text>
 
           {currentExercise.sets.map((set, index) => (
-            <View key={index} style={styles.setCard}>
+            <View key={`set-${currentExercise.exerciseId}-${set.setNumber}`} style={styles.setCard}>
               <View style={styles.setNumber}>
                 <Text style={styles.setNumberText}>{set.setNumber}</Text>
               </View>
