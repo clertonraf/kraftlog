@@ -18,7 +18,7 @@ mkdir -p "$HOOKS_DIR"
 # Create pre-commit hook
 cat > "$PRE_COMMIT_HOOK" << 'EOF'
 #!/bin/sh
-# Pre-commit hook to run Biome linting
+# Pre-commit hook to run Biome linting and TypeScript type checking
 
 echo "Running Biome linter..."
 
@@ -30,14 +30,28 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|
 
 if [ -z "$STAGED_FILES" ]; then
   echo "✓ No staged TypeScript/JavaScript files to lint"
-  exit 0
+else
+  # Re-add auto-fixed files
+  echo "$STAGED_FILES" | xargs git add
+  echo "✓ Biome linting completed"
 fi
 
-# Re-add auto-fixed files
-echo "$STAGED_FILES" | xargs git add
+# Run TypeScript type checking
+echo "Running TypeScript type checker..."
+npx tsc --noEmit
 
-echo "✓ Biome linting completed"
-echo "Note: Hook allows warnings. Review with 'npm run lint' before pushing."
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript type checking failed!"
+  echo "Please fix the type errors before committing."
+  echo ""
+  echo "To bypass this check (not recommended), use: git commit --no-verify"
+  exit 1
+fi
+
+echo "✓ TypeScript type checking passed"
+echo ""
+echo "✅ All checks passed! Proceeding with commit..."
 exit 0
 EOF
 
@@ -50,7 +64,8 @@ echo "The pre-commit hook will automatically:"
 echo "  - Run Biome linting on staged files"
 echo "  - Auto-fix issues when possible"
 echo "  - Re-stage fixed files"
-echo "  - Allow commits with warnings (not errors)"
+echo "  - Run TypeScript type checking (tsc --noEmit)"
+echo "  - Block commits if type errors are found"
 echo ""
 echo "To review all issues before pushing, run: npm run lint"
 echo "To bypass the hook (not recommended), use: git commit --no-verify"
