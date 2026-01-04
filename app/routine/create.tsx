@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,6 +24,7 @@ export default function CreateRoutineScreen() {
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(!!id);
 
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -31,6 +32,51 @@ export default function CreateRoutineScreen() {
   const [isActive, setIsActive] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
+  const parseDate = (dateString: string): Date => {
+    // Parse DD-MM-YYYY format
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day);
+    }
+    return new Date();
+  };
+
+  useEffect(() => {
+    if (id) {
+      loadRoutine();
+    }
+  }, [id]);
+
+  const loadRoutine = async () => {
+    if (!id) return;
+
+    setInitialLoading(true);
+    try {
+      const routine = await routineService.getRoutineById(id);
+      setName(routine.name);
+      if (routine.startDate) {
+        setStartDate(parseDate(routine.startDate));
+      }
+      if (routine.endDate) {
+        setEndDate(parseDate(routine.endDate));
+      }
+      setIsActive(routine.isActive || false);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to load routine';
+      if (Platform.OS === 'web') {
+        alert(`Error: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
+      router.back();
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, '0');
@@ -120,7 +166,7 @@ export default function CreateRoutineScreen() {
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{id ? 'Edit Routine' : 'New Routine'}</Text>
-          <TouchableOpacity onPress={handleSave} disabled={loading}>
+          <TouchableOpacity onPress={handleSave} disabled={loading || initialLoading}>
             {loading ? (
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
@@ -129,80 +175,90 @@ export default function CreateRoutineScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Name *</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g., Summer Cut 2024"
-              placeholderTextColor="#999"
-            />
+        {initialLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>Loading routine...</Text>
           </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Start Date</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowStartDatePicker(true)}
-            >
-              <Text style={styles.dateText}>{formatDate(startDate)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#007AFF" />
-            </TouchableOpacity>
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_event, selectedDate) => {
-                  setShowStartDatePicker(Platform.OS === 'ios');
-                  if (selectedDate) {
-                    setStartDate(selectedDate);
-                  }
-                }}
+        ) : (
+          <ScrollView style={styles.content}>
+            <View style={styles.section}>
+              <Text style={styles.label}>Name *</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g., Summer Cut 2024"
+                placeholderTextColor="#999"
               />
-            )}
-          </View>
+            </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>End Date</Text>
-            <TouchableOpacity style={styles.dateButton} onPress={() => setShowEndDatePicker(true)}>
-              <Text style={styles.dateText}>{formatDate(endDate)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#007AFF" />
-            </TouchableOpacity>
-            {showEndDatePicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_event, selectedDate) => {
-                  setShowEndDatePicker(Platform.OS === 'ios');
-                  if (selectedDate) {
-                    setEndDate(selectedDate);
-                  }
-                }}
-              />
-            )}
-          </View>
+            <View style={styles.section}>
+              <Text style={styles.label}>Start Date</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowStartDatePicker(true)}
+              >
+                <Text style={styles.dateText}>{formatDate(startDate)}</Text>
+                <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={startDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_event, selectedDate) => {
+                    setShowStartDatePicker(Platform.OS === 'ios');
+                    if (selectedDate) {
+                      setStartDate(selectedDate);
+                    }
+                  }}
+                />
+              )}
+            </View>
 
-          <View style={styles.section}>
-            <TouchableOpacity style={styles.checkboxRow} onPress={() => setIsActive(!isActive)}>
-              <View style={[styles.checkbox, isActive && styles.checkboxChecked]}>
-                {isActive && <Ionicons name="checkmark" size={16} color="#FFF" />}
-              </View>
-              <Text style={styles.checkboxLabel}>Set as active routine</Text>
-            </TouchableOpacity>
-            <Text style={styles.hint}>Only one routine can be active at a time</Text>
-          </View>
+            <View style={styles.section}>
+              <Text style={styles.label}>End Date</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowEndDatePicker(true)}
+              >
+                <Text style={styles.dateText}>{formatDate(endDate)}</Text>
+                <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+              </TouchableOpacity>
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={endDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_event, selectedDate) => {
+                    setShowEndDatePicker(Platform.OS === 'ios');
+                    if (selectedDate) {
+                      setEndDate(selectedDate);
+                    }
+                  }}
+                />
+              )}
+            </View>
 
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle-outline" size={20} color="#007AFF" />
-            <Text style={styles.infoText}>
-              After creating the routine, you'll be able to add workouts and exercises.
-            </Text>
-          </View>
-        </ScrollView>
+            <View style={styles.section}>
+              <TouchableOpacity style={styles.checkboxRow} onPress={() => setIsActive(!isActive)}>
+                <View style={[styles.checkbox, isActive && styles.checkboxChecked]}>
+                  {isActive && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                </View>
+                <Text style={styles.checkboxLabel}>Set as active routine</Text>
+              </TouchableOpacity>
+              <Text style={styles.hint}>Only one routine can be active at a time</Text>
+            </View>
+
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle-outline" size={20} color="#007AFF" />
+              <Text style={styles.infoText}>
+                After creating the routine, you'll be able to add workouts and exercises.
+              </Text>
+            </View>
+          </ScrollView>
+        )}
       </View>
     </View>
   );
@@ -238,6 +294,17 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
   },
   content: {
     flex: 1,
