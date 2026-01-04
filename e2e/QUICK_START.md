@@ -1,65 +1,65 @@
 # Quick Start - Playwright E2E Tests
 
-## ⚠️ Installation Note
+## ⚠️ Known Issue
 
-Due to peer dependency conflicts with React 19, Playwright cannot be installed automatically.
+Due to peer dependency conflicts between Playwright and React 19 in Expo, Playwright cannot be installed in this project's `node_modules`. 
 
-## 🚀 Two Ways to Run Tests
+## ✅ **Working Solution: Global Install**
 
-### Option 1: Direct npx (Recommended)
-
-Run tests directly with npx (will download Playwright on first run):
+Install Playwright globally once, then run tests:
 
 ```bash
-# When prompted "Need to install... Ok to proceed? (y)", type 'y'
+# One-time setup (installs Playwright globally)
+npm install -g @playwright/test@1.57.0
+playwright install chromium
 
-# Run smoke tests (fast)
-npx playwright@1.57.0 test e2e/smoke.spec.ts
-
-# Run all tests  
-npx playwright@1.57.0 test
-
-# Run with browser visible
-npx playwright@1.57.0 test --headed
-
-# Debug mode
-npx playwright@1.57.0 test --debug
-```
-
-### Option 2: Install browsers once, then use npx
-
-```bash
-# First time - install browsers (one-time, 2-3 minutes)
-npx playwright@1.57.0 install chromium
-
-# Then run tests
-npx playwright@1.57.0 test e2e/smoke.spec.ts
+# Then run tests anytime:
+cd /Users/clerton/workspace/kraftlog
+playwright test e2e/smoke.spec.ts
+playwright test                          # All tests
+playwright test --headed                 # With visible browser
+playwright test --debug                  # Debug mode
+playwright show-report                   # View results
 ```
 
 ## 📋 What Gets Tested
 
 - ✅ **Authentication**: Login, register, password reset
-- ✅ **Routines**: Create, edit (including dates on web), set active
-- ✅ **Exercises**: Search, filter, view details
-- ✅ **Workouts**: Start, log sets, complete, view history
-- ✅ **Settings**: Profile, server config, logout
-- ✅ **Responsive**: Mobile, tablet, desktop viewports
-- ✅ **Error Handling**: Network failures, validation
+- ✅ **Routines**: Create, edit (dates on web), delete, set active
+- ✅ **Exercises**: Search, filter, view details, PDF import
+- ✅ **Workouts**: Start sessions, log sets, complete, view history
+- ✅ **Settings**: Profile, server config, responsive design
+- ✅ **Smoke Tests**: Critical user journeys
 
 ## 🔧 Prerequisites
 
-- **Backend must be running** on `http://localhost:8080`
-- **Test user**: `admin@kraftlog.com` / `admin123` (default)
-
-Start backend:
+**Backend must be running on port 8080:**
 ```bash
 docker-compose up -d
 ```
 
+**Default test user:**
+- Email: `admin@kraftlog.com`
+- Password: `admin123`
+
+## 📊 Test Files
+
+- `e2e/smoke.spec.ts` - Critical smoke tests (fastest)
+- `e2e/auth.spec.ts` - Authentication flows
+- `e2e/routines.spec.ts` - Routine management
+- `e2e/exercises.spec.ts` - Exercise features
+- `e2e/workouts.spec.ts` - Workout sessions
+- `e2e/settings.spec.ts` - Settings & config
+
 ## 🐛 Troubleshooting
 
-### Tests fail to start web server?
-Make sure port 8081 is free:
+### Global install not working?
+Try with sudo:
+```bash
+sudo npm install -g @playwright/test@1.57.0
+```
+
+### Port 8081 already in use?
 ```bash
 lsof -ti:8081 | xargs kill -9
 ```
@@ -69,14 +69,21 @@ Set environment variables:
 ```bash
 export TEST_USER_EMAIL=your@email.com
 export TEST_USER_PASSWORD=yourpassword
-npx playwright@1.57.0 test e2e/smoke.spec.ts
+playwright test e2e/smoke.spec.ts
 ```
 
-### View test results?
+### Tests can't start web server?
+Start it manually first:
 ```bash
-npx playwright@1.57.0 show-report
+npm run web
+# Then in another terminal:
+playwright test e2e/smoke.spec.ts
 ```
 
-## 📊 CI/CD
+## 📝 Future Fix
 
-Tests run automatically on GitHub Actions for every push and PR.
+This issue will be resolved when either:
+- Expo/React Native updates to be compatible with Playwright's peer dependencies
+- Playwright releases a version compatible with React 19
+
+For now, the global install method works reliably.
