@@ -51,7 +51,7 @@ export default function ForgotPasswordScreen() {
           },
         ]
       );
-    } catch (_error: any) {
+    } catch (_error) {
       // For security, we show the same message even if email doesn't exist
       setEmailSent(true);
       Alert.alert(
@@ -82,9 +82,9 @@ export default function ForgotPasswordScreen() {
             styles.content,
             { paddingTop: insets.top + 40 },
             layout.isWeb && {
-              maxWidth: layout.formMaxWidth as any,
-              alignSelf: 'center',
-              width: '100%',
+              maxWidth: layout.formMaxWidth as number,
+              alignSelf: 'center' as const,
+              width: '100%' as const,
             },
           ]}
         >

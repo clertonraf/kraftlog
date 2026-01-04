@@ -39,10 +39,12 @@ export default function LoginScreen() {
   // Navigate when authentication succeeds
   useEffect(() => {
     if (isAuthenticated && loading) {
+      console.log('[Login] Authentication succeeded, navigating to tabs...');
       // Give auth state a moment to fully stabilize
       const timer = setTimeout(() => {
+        console.log('[Login] Executing navigation to /(tabs)/routines');
         setLoading(false);
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/routines');
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -58,8 +60,9 @@ export default function LoginScreen() {
     try {
       await login({ email, password });
       // Navigation will happen automatically via useEffect above
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Login failed');
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      Alert.alert('Error', err.response?.data?.message || 'Login failed');
       setLoading(false); // Only clear loading on error
     }
   };
@@ -94,9 +97,9 @@ export default function LoginScreen() {
             styles.content,
             { paddingTop: insets.top + 40 },
             layout.isWeb && {
-              maxWidth: layout.formMaxWidth as any,
-              alignSelf: 'center',
-              width: '100%',
+              maxWidth: layout.formMaxWidth as number,
+              alignSelf: 'center' as const,
+              width: '100%' as const,
             },
           ]}
         >

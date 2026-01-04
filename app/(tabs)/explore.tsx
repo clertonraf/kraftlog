@@ -54,11 +54,15 @@ export default function ExercisesScreen() {
       console.log('Sample muscle:', musclesData[0]);
       setExercises(exercisesData);
       setMuscles(musclesData);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Load data error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to load exercises');
+      const err = error as {
+        response?: { data?: { message?: string }; status?: number };
+        message?: string;
+      };
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
+      Alert.alert('Error', err.response?.data?.message || 'Failed to load exercises');
     } finally {
       setLoading(false);
     }
@@ -147,9 +151,10 @@ export default function ExercisesScreen() {
             `Import Complete!\n\nSuccessfully imported ${importResult.successful} exercises.\nFailed: ${importResult.failed}`
           );
           loadData();
-        } catch (error: any) {
+        } catch (error) {
           console.error('Import error:', error);
-          const errorMsg = error.response?.data?.message || error.message || 'Failed to import PDF';
+          const err = error as { response?: { data?: { message?: string } }; message?: string };
+          const errorMsg = err.response?.data?.message || err.message || 'Failed to import PDF';
           alert(`Import Error: ${errorMsg}`);
         } finally {
           setImporting(false);
@@ -172,7 +177,7 @@ export default function ExercisesScreen() {
                     uri: file.uri,
                     type: file.mimeType || 'application/pdf',
                     name: file.name,
-                  } as any);
+                  } as unknown as Blob);
 
                   const importResult = await exerciseService.importExercisesFromPdf(formData);
 
@@ -181,9 +186,13 @@ export default function ExercisesScreen() {
                     `Successfully imported ${importResult.successful} exercises.\nFailed: ${importResult.failed}`,
                     [{ text: 'OK', onPress: loadData }]
                   );
-                } catch (error: any) {
+                } catch (error) {
+                  const err = error as {
+                    response?: { data?: { message?: string } };
+                    message?: string;
+                  };
                   const errorMsg =
-                    error.response?.data?.message || error.message || 'Failed to import PDF';
+                    err.response?.data?.message || err.message || 'Failed to import PDF';
                   Alert.alert('Import Error', errorMsg);
                 } finally {
                   setImporting(false);
@@ -193,9 +202,10 @@ export default function ExercisesScreen() {
           ]
         );
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PDF selection error:', error);
-      alert(`Error: ${error.message || 'Failed to select PDF file'}`);
+      const err = error as { message?: string };
+      alert(`Error: ${err.message || 'Failed to select PDF file'}`);
     }
   };
 
@@ -234,9 +244,9 @@ export default function ExercisesScreen() {
           Alert.alert('Success', 'Exercise deleted successfully');
         }
         loadData();
-      } catch (error: any) {
-        const errorMsg =
-          error.response?.data?.message || error.message || 'Failed to delete exercise';
+      } catch (error) {
+        const err = error as { response?: { data?: { message?: string } }; message?: string };
+        const errorMsg = err.response?.data?.message || err.message || 'Failed to delete exercise';
         if (Platform.OS === 'web') {
           alert(`Error: ${errorMsg}`);
         } else {

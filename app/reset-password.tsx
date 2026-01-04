@@ -67,10 +67,11 @@ export default function ResetPasswordScreen() {
           },
         ]
       );
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       const errorMessage =
-        error.response?.data?.message ||
-        'Failed to reset password. The link may be invalid or expired.';
+        err.response?.data?.message ||
+        'Failed to reset password. The link may be invalid or expired';
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
@@ -90,9 +91,9 @@ export default function ResetPasswordScreen() {
             styles.content,
             { paddingTop: insets.top + 40 },
             layout.isWeb && {
-              maxWidth: layout.formMaxWidth as any,
-              alignSelf: 'center',
-              width: '100%',
+              maxWidth: layout.formMaxWidth as number,
+              alignSelf: 'center' as const,
+              width: '100%' as const,
             },
           ]}
         >

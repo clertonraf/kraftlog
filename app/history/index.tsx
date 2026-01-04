@@ -32,8 +32,9 @@ export default function HistoryScreen() {
           (a, b) => new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime()
         )
       );
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load history';
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to load history';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -76,8 +77,9 @@ export default function HistoryScreen() {
       } else {
         Alert.alert('Success', 'Workout deleted successfully');
       }
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete workout';
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {

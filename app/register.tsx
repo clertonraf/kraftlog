@@ -56,8 +56,9 @@ export default function RegisterScreen() {
         heightCm: heightCm ? parseFloat(heightCm) : undefined,
       });
       // Navigation will happen automatically via useEffect above
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Registration failed');
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      Alert.alert('Error', err.response?.data?.message || 'Registration failed');
       setLoading(false); // Only clear loading on error
     }
   };
@@ -75,9 +76,9 @@ export default function RegisterScreen() {
             styles.content,
             { paddingTop: insets.top + 20 },
             layout.isWeb && {
-              maxWidth: layout.formMaxWidth as any,
-              alignSelf: 'center',
-              width: '100%',
+              maxWidth: layout.formMaxWidth as number,
+              alignSelf: 'center' as const,
+              width: '100%' as const,
             },
           ]}
         >
@@ -161,11 +162,7 @@ export default function RegisterScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => router.back()}
-              disabled={loading}
-              testID="login-link"
-            >
+            <TouchableOpacity onPress={() => router.back()} disabled={loading} testID="login-link">
               <Text style={styles.linkText}>
                 Already have an account? <Text style={styles.linkBold}>Login</Text>
               </Text>

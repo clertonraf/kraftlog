@@ -27,9 +27,10 @@ export default function RoutineHistoryDetailScreen() {
     try {
       const data = await logRoutineService.getLogRoutineById(id);
       setLogRoutine(data);
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       const errorMsg =
-        error.response?.data?.message || error.message || 'Failed to load workout details';
+        err.response?.data?.message || err.message || 'Failed to load workout details';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -75,13 +76,17 @@ export default function RoutineHistoryDetailScreen() {
     if (!logRoutine?.logWorkouts) return 0;
 
     let total = 0;
-    logRoutine.logWorkouts.forEach((workout) => {
-      workout.logExercises?.forEach((exercise) => {
-        exercise.logSets?.forEach((set) => {
-          total += (set.weightKg || 0) * (set.reps || 0);
-        });
-      });
-    });
+    for (const workout of logRoutine.logWorkouts) {
+      if (workout.logExercises) {
+        for (const exercise of workout.logExercises) {
+          if (exercise.logSets) {
+            for (const set of exercise.logSets) {
+              total += (set.weightKg || 0) * (set.reps || 0);
+            }
+          }
+        }
+      }
+    }
     return Math.round(total);
   };
 
@@ -89,11 +94,13 @@ export default function RoutineHistoryDetailScreen() {
     if (!logRoutine?.logWorkouts) return 0;
 
     let total = 0;
-    logRoutine.logWorkouts.forEach((workout) => {
-      workout.logExercises?.forEach((exercise) => {
-        total += exercise.logSets?.length || 0;
-      });
-    });
+    for (const workout of logRoutine.logWorkouts) {
+      if (workout.logExercises) {
+        for (const exercise of workout.logExercises) {
+          total += exercise.logSets?.length || 0;
+        }
+      }
+    }
     return total;
   };
 

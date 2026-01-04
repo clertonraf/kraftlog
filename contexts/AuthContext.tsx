@@ -32,8 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const initializeAuth = useCallback(async () => {
     try {
+      console.log('[AuthContext] Starting auth initialization');
+
       // Load configuration
       const config = await configService.getConfig();
+      console.log('[AuthContext] Config loaded:', { useRemoteServer: config.useRemoteServer });
       setIsOfflineMode(!config.useRemoteServer);
       setUseRemoteServer(config.useRemoteServer);
 
@@ -45,17 +48,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check authentication only if using remote server
       if (config.useRemoteServer) {
         const isAuth = await authService.isAuthenticated();
+        console.log('[AuthContext] Is authenticated:', isAuth);
+
         if (isAuth) {
           const currentUser = await authService.getCurrentUser();
-          console.log('Current user from storage:', currentUser);
-          console.log('isAdmin value:', currentUser?.admin);
-          setUser(currentUser);
+          console.log('[AuthContext] Current user from storage:', currentUser);
+          console.log('[AuthContext] isAdmin value:', currentUser?.admin);
+
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            console.warn('[AuthContext] Token exists but no user data, clearing session');
+            await authService.logout();
+          }
         }
       }
     } catch (error) {
-      console.error('Auth initialization failed:', error);
+      console.error('[AuthContext] Auth initialization failed:', error);
     } finally {
       setLoading(false);
+      console.log('[AuthContext] Auth initialization complete');
     }
   }, []);
 

@@ -42,33 +42,12 @@ function RootLayoutNav() {
     // Skip auth check for config screen
     if (inConfigScreen) return;
 
-    // If using remote server and not authenticated, redirect to login
+    // Only protect authenticated routes - redirect to login if not authenticated
+    // Do NOT redirect authenticated users from public pages - let them navigate naturally
     if (useRemoteServer && !isAuthenticated && inAuthenticatedRoute) {
       router.replace('/login');
     }
-    // If authenticated with remote server and not in authenticated route, go to tabs
-    else if (
-      useRemoteServer &&
-      isAuthenticated &&
-      !inAuthenticatedRoute &&
-      segments[0] !== 'register' &&
-      segments[0] !== 'modal'
-    ) {
-      router.replace('/(tabs)');
-    }
-    // If offline mode (not using remote server), allow access to tabs
-    else if (
-      !useRemoteServer &&
-      !inAuthenticatedRoute &&
-      segments[0] !== 'login' &&
-      segments[0] !== 'register' &&
-      segments[0] !== 'modal' &&
-      segments[0] !== 'forgot-password' &&
-      segments[0] !== 'reset-password'
-    ) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated, segments, loading, useRemoteServer, configChecked, router.replace]);
+  }, [isAuthenticated, segments, loading, useRemoteServer, configChecked, router]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

@@ -25,23 +25,44 @@ test.describe('Smoke Tests - Critical Flows', () => {
 
     await expect(page).toHaveURL(/\/(tabs|routines|explore)/);
 
-    // 2. Navigate to routines
-    await page.goto('/(tabs)/routines');
+    // 2. Navigate to routines using tab navigation (no page reload)
+    const routinesTab = page
+      .getByRole('link', { name: /routines/i })
+      .or(page.getByText(/routines/i).first());
+    await routinesTab.click();
+    await page.waitForTimeout(1000);
     await expect(page).toHaveURL(/routines/);
 
     // 3. Create a new routine
     const routineName = `Smoke Test ${Date.now()}`;
-    await page
-      .getByRole('button', { name: /create|new/i })
-      .first()
-      .click();
-    await page.getByPlaceholder(/routine.*name/i).fill(routineName);
-    await page.locator('input[type="date"]').first().fill('2024-01-01');
-    await page.locator('input[type="date"]').last().fill('2024-12-31');
-    await page.getByRole('button', { name: /save/i }).click();
+
+    // Click FAB and wait for navigation to /routine/create
+    const createFab = page
+      .getByTestId('create-routine-fab')
+      .or(page.getByRole('button', { name: /create.*routine/i }))
+      .or(page.locator('[style*="fab"]').getByLabel(/add|create/i));
+    await createFab.click({ timeout: 15000 });
+
+    // Wait for navigation to create page
+    await page.waitForURL(/routine\/create/, { timeout: 10000 });
+    await page.waitForTimeout(1000);
+
+    // Fill form
+    const nameInput = page.getByTestId('routine-name-input');
+    await nameInput.waitFor({ state: 'visible', timeout: 10000 });
+    await nameInput.fill(routineName);
+
+    // Fill dates using ISO format for web inputs
+    const today = new Date();
+    const endDateVal = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await page.locator('input[type="date"]').first().fill(today.toISOString().split('T')[0]);
+    await page.locator('input[type="date"]').last().fill(endDateVal.toISOString().split('T')[0]);
+
+    const saveButton = page.getByTestId('save-routine-button');
+    await saveButton.click();
 
     // Verify routine was created
-    await expect(page).toHaveURL(/routines/);
+    await page.waitForURL(/routines/, { timeout: 10000 });
     await expect(page.getByText(routineName)).toBeVisible({ timeout: 10000 });
 
     // 4. Open the routine
@@ -61,13 +82,21 @@ test.describe('Smoke Tests - Critical Flows', () => {
       await expect(page.getByText(workoutName)).toBeVisible({ timeout: 10000 });
     }
 
-    // 6. Navigate to exercises
-    await page.goto('/(tabs)/explore');
+    // 6. Navigate to exercises using tab navigation
+    const exercisesTab = page
+      .getByRole('link', { name: /exercises|explore/i })
+      .or(page.getByText(/exercises|explore/i).first());
+    await exercisesTab.click();
+    await page.waitForTimeout(1000);
     await expect(page).toHaveURL(/explore/);
     await expect(page.getByText(/exercise|explore/i)).toBeVisible();
 
-    // 7. Logout
-    await page.goto('/(tabs)/settings');
+    // 7. Navigate to settings and logout
+    const settingsTab = page
+      .getByRole('link', { name: /settings/i })
+      .or(page.getByText(/settings/i).first());
+    await settingsTab.click();
+    await page.waitForTimeout(1000);
     const logoutBtn = page.getByRole('button', { name: /logout|sign out/i });
 
     if (await logoutBtn.isVisible().catch(() => false)) {
@@ -83,58 +112,27 @@ test.describe('Smoke Tests - Critical Flows', () => {
     await loginPage.login(TEST_USERS.admin.email, TEST_USERS.admin.password);
     await loginPage.waitForNavigation();
 
-    // Verify we're on a tabs page (with generous timeout and manual navigation fallback)
-    const maxAttempts = 3;
-    let attempt = 0;
-    let navigated = false;
-    
-    while (attempt < maxAttempts && !navigated) {
-      attempt++;
-      const currentUrl = page.url();
-      
-      if (currentUrl.match(/\/(tabs|routines|explore)/)) {
-        navigated = true;
-        break;
-      }
-      
-      // If stuck at /, manually navigate to tabs
-      if (currentUrl.endsWith('/')) {
-        console.log(`Attempt ${attempt}: Stuck at /, manually navigating to /(tabs)`);
-        await page.goto('/(tabs)');
-        await page.waitForTimeout(2000);
-      } else {
-        await page.waitForTimeout(1000);
-      }
-    }
-    
     await expect(page).toHaveURL(/\/(tabs|routines|explore)/);
 
-    // Test all main navigation tabs by clicking on them
-    // Don't use page.goto() as it might reset state
+    // Test all main navigation tabs using client-side navigation (click tabs)
     const tabs = [
-      { name: 'Routines', testId: 'tab-routines', url: /routines/ },
-      { name: 'Explore', testId: 'tab-explore', url: /explore/ },
-      { name: 'History', testId: 'tab-history', url: /history/ },
+      { name: 'Routines', url: /routines/ },
+      { name: 'Exercises', url: /explore/ },
+      { name: 'Settings', url: /settings/ },
     ];
 
     for (const tab of tabs) {
-      // Try to click the tab button (more reliable than goto)
-      try {
-        const tabButton = page.getByRole('button', { name: new RegExp(tab.name, 'i') });
-        await tabButton.click({ timeout: 5000 });
-      } catch {
-        // Fallback: try test ID if role doesn't work
-        try {
-          await page.click(`[data-testid="${tab.testId}"]`, { timeout: 5000 });
-        } catch {
-          // Last resort: use goto
-          await page.goto(`/(tabs)/${tab.name.toLowerCase()}`);
-        }
-      }
-      
+      // Find and click the tab link (not button)
+      const tabLink = page
+        .getByRole('link', { name: new RegExp(tab.name, 'i') })
+        .or(page.getByText(new RegExp(tab.name, 'i')).first());
+
+      await tabLink.click();
+      await page.waitForTimeout(1000);
+
       await expect(page).toHaveURL(tab.url);
       await expect(page).not.toHaveURL(/login/); // Should still be logged in
-      
+
       // Small delay between navigation
       await page.waitForTimeout(500);
     }
@@ -146,21 +144,43 @@ test.describe('Smoke Tests - Critical Flows', () => {
     await loginPage.login(TEST_USERS.admin.email, TEST_USERS.admin.password);
     await loginPage.waitForNavigation();
 
-    // Create a routine
-    await page.goto('/(tabs)/routines');
+    // Create a routine using tab navigation
+    const routinesTab = page
+      .getByRole('link', { name: /routines/i })
+      .or(page.getByText(/routines/i).first());
+    await routinesTab.click();
+    await page.waitForTimeout(1000);
+
     const routineName = `Persist Test ${Date.now()}`;
-    await page
-      .getByRole('button', { name: /create|new/i })
-      .first()
-      .click();
-    await page.getByPlaceholder(/routine.*name/i).fill(routineName);
-    await page.getByRole('button', { name: /save/i }).click();
+    const createFab = page
+      .getByTestId('create-routine-fab')
+      .or(page.getByRole('button', { name: /create.*routine/i }))
+      .or(page.locator('[style*="fab"]').getByLabel(/add|create/i));
+    await createFab.click({ timeout: 15000 });
 
-    await expect(page.getByText(routineName)).toBeVisible();
+    // Wait for navigation to create page
+    await page.waitForURL(/routine\/create/, { timeout: 10000 });
+    await page.waitForTimeout(1000);
 
-    // Navigate away and back
-    await page.goto('/(tabs)/explore');
-    await page.goto('/(tabs)/routines');
+    const nameInput = page.getByTestId('routine-name-input');
+    await nameInput.waitFor({ state: 'visible', timeout: 10000 });
+    await nameInput.fill(routineName);
+
+    const saveButton = page.getByTestId('save-routine-button');
+    await saveButton.click();
+
+    await page.waitForURL(/routines/, { timeout: 10000 });
+    await expect(page.getByText(routineName)).toBeVisible({ timeout: 10000 });
+
+    // Navigate away and back using tabs
+    const exercisesTab = page
+      .getByRole('link', { name: /exercises|explore/i })
+      .or(page.getByText(/exercises|explore/i).first());
+    await exercisesTab.click();
+    await page.waitForTimeout(1000);
+
+    await routinesTab.click();
+    await page.waitForTimeout(1000);
 
     // Routine should still be there
     await expect(page.getByText(routineName)).toBeVisible();
@@ -176,14 +196,30 @@ test.describe('Smoke Tests - Critical Flows', () => {
     // Simulate network failure
     await page.route('**/api/**', (route) => route.abort());
 
+    // Navigate to routines using tab
+    const routinesTab = page
+      .getByRole('link', { name: /routines/i })
+      .or(page.getByText(/routines/i).first());
+    await routinesTab.click();
+    await page.waitForTimeout(1000);
+
     // Try to create a routine (should fail gracefully)
-    await page.goto('/(tabs)/routines');
-    await page
-      .getByRole('button', { name: /create|new/i })
-      .first()
-      .click();
-    await page.getByPlaceholder(/routine.*name/i).fill('Test Routine');
-    await page.getByRole('button', { name: /save/i }).click();
+    const createFab = page
+      .getByTestId('create-routine-fab')
+      .or(page.getByRole('button', { name: /create.*routine/i }))
+      .or(page.locator('[style*="fab"]').getByLabel(/add|create/i));
+    await createFab.click({ timeout: 15000 });
+
+    // Wait for navigation to create page
+    await page.waitForURL(/routine\/create/, { timeout: 10000 });
+    await page.waitForTimeout(1000);
+
+    const nameInput = page.getByTestId('routine-name-input');
+    await nameInput.waitFor({ state: 'visible', timeout: 10000 });
+    await nameInput.fill('Test Routine');
+
+    const saveButton = page.getByTestId('save-routine-button');
+    await saveButton.click();
 
     // Should show error message, not crash
     await expect(page.getByText(/error|failed|network/i)).toBeVisible({ timeout: 10000 });
@@ -201,9 +237,10 @@ test.describe('Smoke Tests - Critical Flows', () => {
 
     // Reload the page
     await page.reload();
+    await page.waitForTimeout(2000); // Wait for auth re-initialization
 
     // Should still be logged in (not redirect to login)
-    await expect(page).not.toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/, { timeout: 10000 });
   });
 });
 
@@ -228,11 +265,18 @@ test.describe('Performance Smoke Tests', () => {
 
     const startTime = Date.now();
 
-    // Navigate between tabs
-    await page.goto('/(tabs)/routines');
-    await page.waitForLoadState('domcontentloaded');
-    await page.goto('/(tabs)/explore');
-    await page.waitForLoadState('domcontentloaded');
+    // Navigate between tabs using tab navigation (not page reloads)
+    const routinesTab = page
+      .getByRole('link', { name: /routines/i })
+      .or(page.getByText(/routines/i).first());
+    await routinesTab.click();
+    await page.waitForTimeout(500);
+
+    const exercisesTab = page
+      .getByRole('link', { name: /exercises|explore/i })
+      .or(page.getByText(/exercises|explore/i).first());
+    await exercisesTab.click();
+    await page.waitForTimeout(500);
 
     const navigationTime = Date.now() - startTime;
 

@@ -21,9 +21,9 @@ class SyncService {
   }
 
   private notifySubscribers(status: SyncStatus) {
-    this.syncCallbacks.forEach((callback) => {
+    for (const callback of this.syncCallbacks) {
       callback(status);
-    });
+    }
   }
 
   async getSyncStatus(): Promise<SyncStatus> {

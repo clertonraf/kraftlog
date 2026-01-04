@@ -34,12 +34,16 @@ export default function RoutinesScreen() {
     try {
       const data = await routineService.getRoutinesByUserId(userId);
       setRoutines(data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading routines:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load routines';
+      const err = error as {
+        response?: { status?: number; data?: { message?: string } };
+        message?: string;
+      };
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to load routines';
 
       // If user not found (404), ask to re-login
-      if (error.response?.status === 404 && errorMsg.includes('User not found')) {
+      if (err.response?.status === 404 && errorMsg.includes('User not found')) {
         if (Platform.OS === 'web') {
           if (confirm('Your session is invalid. Would you like to login again?')) {
             router.replace('/login');
@@ -81,10 +85,10 @@ export default function RoutinesScreen() {
       await routineService.activateRoutine(id);
       console.log('Routine activated successfully, reloading...');
       loadRoutines();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to activate routine:', error);
-      const errorMsg =
-        error.response?.data?.message || error.message || 'Failed to activate routine';
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to activate routine';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -98,9 +102,9 @@ export default function RoutinesScreen() {
       routineService
         .deleteRoutine(id)
         .then(() => loadRoutines())
-        .catch((error: any) => {
-          const errorMsg =
-            error.response?.data?.message || error.message || 'Failed to delete routine';
+        .catch((error) => {
+          const err = error as { response?: { data?: { message?: string } }; message?: string };
+          const errorMsg = err.response?.data?.message || err.message || 'Failed to delete routine';
           if (Platform.OS === 'web') {
             alert(`Error: ${errorMsg}`);
           } else {
@@ -162,9 +166,10 @@ export default function RoutinesScreen() {
       } else {
         throw new Error(importResult.error || 'Import failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       setImporting(false);
-      const errorMsg = error.response?.data?.error || error.message || 'Failed to import routine';
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to import routine';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -288,6 +293,8 @@ export default function RoutinesScreen() {
         <TouchableOpacity
           style={[styles.fab, { bottom: insets.bottom + 20 }]}
           onPress={() => router.push('/routine/create')}
+          accessibilityLabel="Create new routine"
+          testID="create-routine-fab"
         >
           <Ionicons name="add" size={32} color="#FFF" />
         </TouchableOpacity>

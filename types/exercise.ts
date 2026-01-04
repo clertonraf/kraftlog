@@ -57,5 +57,5 @@ export interface ImportResult {
   totalProcessed: number;
   successful: number;
   failed: number;
-  failures: any[];
+  failures: Array<{ exercise: string; error: string }>;
 }

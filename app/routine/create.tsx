@@ -59,8 +59,9 @@ export default function CreateRoutineScreen() {
         setEndDate(parseDate(routine.endDate));
       }
       setIsActive(routine.isActive || false);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load routine';
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to load routine';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -126,11 +127,15 @@ export default function CreateRoutineScreen() {
 
       // Navigate back to routines tab - this will trigger useFocusEffect
       router.push('/(tabs)/routines');
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to save routine';
+    } catch (error) {
+      const err = error as {
+        response?: { data?: { message?: string }; status?: number };
+        message?: string;
+      };
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to save routine';
 
       // If user not found (404), ask to re-login
-      if (error.response?.status === 404 && errorMsg.includes('User not found')) {
+      if (err.response?.status === 404 && errorMsg.includes('User not found')) {
         if (Platform.OS === 'web') {
           if (confirm('Your session is invalid. Would you like to login again?')) {
             router.replace('/login');
@@ -166,7 +171,13 @@ export default function CreateRoutineScreen() {
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{id ? 'Edit Routine' : 'New Routine'}</Text>
-          <TouchableOpacity onPress={handleSave} disabled={loading || initialLoading}>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={loading || initialLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Save routine"
+            testID="save-routine-button"
+          >
             {loading ? (
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
@@ -190,6 +201,8 @@ export default function CreateRoutineScreen() {
                 onChangeText={setName}
                 placeholder="e.g., Summer Cut 2024"
                 placeholderTextColor="#999"
+                testID="routine-name-input"
+                accessibilityLabel="Routine name"
               />
             </View>
 

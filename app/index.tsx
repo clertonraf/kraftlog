@@ -7,64 +7,82 @@ import { updateApiUrl } from '@/services/api';
 import { configService } from '@/services/configService';
 
 export default function Index() {
-  const { isAuthenticated, loading, useRemoteServer } = useAuth();
+  const { isAuthenticated, loading: authLoading, useRemoteServer } = useAuth();
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
-  const hasCheckedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+  const lastNavigationRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Only run this once on initial mount
-    if (!rootNavigationState?.key || loading || hasCheckedRef.current) {
+    // Wait for navigation state and auth to be ready
+    if (!rootNavigationState?.key || authLoading) {
+      console.log('[Index] Waiting for navigation state or auth loading...', {
+        hasKey: !!rootNavigationState?.key,
+        authLoading,
+      });
       return;
     }
 
-    hasCheckedRef.current = true;
-
-    const checkAndRedirect = async () => {
+    const initializeAndNavigate = async () => {
       try {
-        // On web, auto-configure from environment variable
-        if (Platform.OS === 'web') {
-          const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
+        // Initialize configuration only once
+        if (!hasInitializedRef.current) {
+          hasInitializedRef.current = true;
+          console.log('[Index] First initialization');
 
-          if (!envUrl) {
-            console.error('EXPO_PUBLIC_API_URL not set for web platform');
-          }
+          // On web, auto-configure from environment variable
+          if (Platform.OS === 'web') {
+            const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
 
-          // Auto-configure remote server for web
-          await configService.setRemoteServer(envUrl || '');
-          await updateApiUrl();
+            if (!envUrl) {
+              console.error('EXPO_PUBLIC_API_URL not set for web platform');
+            }
 
-          // Go to login if not authenticated, otherwise to tabs
-          // This only runs on initial app load, not after login
-          if (isAuthenticated) {
-            router.replace('/(tabs)');
+            // Auto-configure remote server for web
+            await configService.setRemoteServer(envUrl || '');
+            await updateApiUrl();
+            console.log('[Index] Web configuration complete');
           } else {
-            router.replace('/login');
+            // Mobile flow - check if configured
+            const isConfigured = await configService.isConfigured();
+
+            if (!isConfigured) {
+              console.log('[Index] Not configured, navigating to server-config');
+              lastNavigationRef.current = '/server-config';
+              router.replace('/server-config');
+              return;
+            }
           }
-          return;
         }
 
-        // Mobile flow - check if configured
-        const isConfigured = await configService.isConfigured();
-
-        if (!isConfigured) {
-          router.replace('/server-config');
-        } else if (useRemoteServer && isAuthenticated) {
-          router.replace('/(tabs)');
+        // Determine target route
+        let targetRoute: string;
+        if (useRemoteServer && isAuthenticated) {
+          targetRoute = '/(tabs)/routines';
         } else if (useRemoteServer && !isAuthenticated) {
-          router.replace('/login');
+          targetRoute = '/login';
         } else {
-          // Offline mode - go directly to tabs
-          router.replace('/(tabs)');
+          targetRoute = '/(tabs)/routines';
+        }
+
+        // Only navigate if we're going to a different route
+        if (lastNavigationRef.current !== targetRoute) {
+          console.log('[Index] Navigating to:', targetRoute, {
+            useRemoteServer,
+            isAuthenticated,
+            previous: lastNavigationRef.current,
+          });
+          lastNavigationRef.current = targetRoute;
+          router.replace(targetRoute as any);
         }
       } catch (error) {
         console.error('Navigation error:', error);
-        hasCheckedRef.current = false;
+        hasInitializedRef.current = false;
       }
     };
 
-    checkAndRedirect();
-  }, [loading, rootNavigationState?.key]); // Intentionally NOT including isAuthenticated!
+    initializeAndNavigate();
+  }, [authLoading, rootNavigationState?.key, isAuthenticated, useRemoteServer, router.replace]);
 
   return (
     <View style={styles.container} testID="loading-screen">
