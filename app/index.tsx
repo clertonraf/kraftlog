@@ -73,7 +73,7 @@ export default function Index() {
             previous: lastNavigationRef.current,
           });
           lastNavigationRef.current = targetRoute;
-          router.replace(targetRoute as any);
+          router.replace(targetRoute as Parameters<typeof router.replace>[0]);
         }
       } catch (error) {
         console.error('Navigation error:', error);

@@ -8,6 +8,70 @@ export interface SyncStatus {
   pendingChanges: number;
 }
 
+interface DbRoutine {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  workouts?: DbWorkout[];
+}
+
+interface DbWorkout {
+  id: string;
+  name: string;
+  description?: string;
+  dayOfWeek?: number;
+  createdAt: string;
+  updatedAt: string;
+  workoutExercises?: DbWorkoutExercise[];
+}
+
+interface DbWorkoutExercise {
+  id: string;
+  workoutId: string;
+  exerciseId: string;
+  orderIndex: number;
+  sets: number;
+  targetReps?: number;
+  reps?: number;
+  targetWeight?: number;
+  restSeconds?: number;
+  restTimeSeconds?: number;
+}
+
+interface DbLogRoutine {
+  id: string;
+  routineId: string;
+  userId: string;
+  startDatetime: string;
+  endDatetime?: string;
+  createdAt: string;
+  updatedAt: string;
+  logWorkouts?: DbLogWorkout[];
+}
+
+interface DbLogWorkout {
+  id: string;
+  workoutId: string;
+  startDatetime: string;
+  endDatetime?: string;
+  createdAt: string;
+  logExercises?: unknown[];
+}
+
+interface DbExercise {
+  id: string;
+  name: string;
+  description?: string;
+  videoUrl?: string;
+  categoryId?: string;
+  equipmentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 class SyncService {
   private isSyncing = false;
   private syncCallbacks: ((status: SyncStatus) => void)[] = [];
@@ -51,7 +115,12 @@ class SyncService {
     };
   }
 
-  async addToSyncQueue(entityType: string, entityId: string, operation: string, data: any) {
+  async addToSyncQueue(
+    entityType: string,
+    entityId: string,
+    operation: string,
+    data: Record<string, unknown>
+  ) {
     const db = await getDatabase();
     if (!db) {
       console.warn('Database not available on web platform');
@@ -119,7 +188,7 @@ class SyncService {
       });
       // Consider online if we get any response (including 401/403 which means server is up)
       return response.ok || response.status === 401 || response.status === 403;
-    } catch (_error: any) {
+    } catch (_error: unknown) {
       // Consider device offline only on network errors
       console.log('Device is offline, skipping sync');
       return false;
@@ -182,13 +251,13 @@ class SyncService {
     }
   }
 
-  private async syncCreate(entityType: string, data: any) {
+  private async syncCreate(entityType: string, data: Record<string, unknown>) {
     const endpoint = this.getEndpoint(entityType);
     const response = await api.post(endpoint, data);
     return response.data;
   }
 
-  private async syncUpdate(entityType: string, entityId: string, data: any) {
+  private async syncUpdate(entityType: string, entityId: string, data: Record<string, unknown>) {
     const endpoint = this.getEndpoint(entityType);
     const response = await api.put(`${endpoint}/${entityId}`, data);
     return response.data;
@@ -237,11 +306,12 @@ class SyncService {
     }
   }
 
-  private async saveRoutinesToLocal(routines: any[]) {
+  private async saveRoutinesToLocal(routines: unknown[]) {
     const db = await getDatabase();
     if (!db) return; // Skip on web
 
-    for (const routine of routines) {
+    for (const routineData of routines) {
+      const routine = routineData as unknown as DbRoutine;
       await db.runAsync(
         `INSERT OR REPLACE INTO routines (id, user_id, name, description, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, 1)`,
@@ -249,15 +319,16 @@ class SyncService {
           routine.id,
           routine.userId,
           routine.name,
-          routine.description,
+          routine.description || null,
           routine.createdAt,
           routine.updatedAt,
-        ]
+        ] as (string | number | null | boolean)[]
       );
 
       // Save workouts
       if (routine.workouts) {
-        for (const workout of routine.workouts) {
+        for (const workoutData of routine.workouts) {
+          const workout = workoutData as unknown as DbWorkout;
           await db.runAsync(
             `INSERT OR REPLACE INTO workouts (id, routine_id, name, description, day_of_week, created_at, updated_at, synced)
              VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
@@ -265,11 +336,11 @@ class SyncService {
               workout.id,
               routine.id,
               workout.name,
-              workout.description,
-              workout.dayOfWeek,
+              workout.description || null,
+              workout.dayOfWeek || null,
               workout.createdAt,
               workout.updatedAt,
-            ]
+            ] as (string | number | null | boolean)[]
           );
 
           // Save workout exercises
@@ -284,10 +355,10 @@ class SyncService {
                   we.exerciseId,
                   we.orderIndex,
                   we.sets,
-                  we.reps,
-                  we.restTimeSeconds,
+                  we.reps || we.targetReps || null,
+                  we.restTimeSeconds || we.restSeconds || null,
                   new Date().toISOString(),
-                ]
+                ] as (string | number | null | boolean)[]
               );
             }
           }
@@ -296,11 +367,12 @@ class SyncService {
     }
   }
 
-  private async saveLogRoutinesToLocal(logRoutines: any[]) {
+  private async saveLogRoutinesToLocal(logRoutines: unknown[]) {
     const db = await getDatabase();
     if (!db) return; // Skip on web
 
-    for (const logRoutine of logRoutines) {
+    for (const logRoutineData of logRoutines) {
+      const logRoutine = logRoutineData as unknown as DbLogRoutine;
       await db.runAsync(
         `INSERT OR REPLACE INTO log_routines (id, routine_id, user_id, start_datetime, end_datetime, created_at, updated_at, synced)
          VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
@@ -309,15 +381,16 @@ class SyncService {
           logRoutine.routineId,
           logRoutine.userId || '',
           logRoutine.startDatetime,
-          logRoutine.endDatetime,
+          logRoutine.endDatetime || null,
           new Date().toISOString(),
           new Date().toISOString(),
-        ]
+        ] as (string | number | null | boolean)[]
       );
 
       // Save log workouts
       if (logRoutine.logWorkouts) {
-        for (const logWorkout of logRoutine.logWorkouts) {
+        for (const logWorkoutData of logRoutine.logWorkouts) {
+          const logWorkout = logWorkoutData as unknown as DbLogWorkout;
           await db.runAsync(
             `INSERT OR REPLACE INTO log_workouts (id, log_routine_id, workout_id, start_datetime, end_datetime, created_at, synced)
              VALUES (?, ?, ?, ?, ?, ?, 1)`,
@@ -326,14 +399,25 @@ class SyncService {
               logRoutine.id,
               logWorkout.workoutId,
               logWorkout.startDatetime,
-              logWorkout.endDatetime,
+              logWorkout.endDatetime || null,
               new Date().toISOString(),
-            ]
+            ] as (string | number | null | boolean)[]
           );
 
           // Save log exercises
           if (logWorkout.logExercises) {
-            for (const logExercise of logWorkout.logExercises) {
+            for (const logExerciseData of logWorkout.logExercises) {
+              const logExercise = logExerciseData as {
+                id: string;
+                exerciseId: string;
+                exerciseName: string;
+                startDatetime: string;
+                endDatetime?: string;
+                notes?: string;
+                repetitions: number;
+                completed: boolean;
+                logSets?: unknown[];
+              };
               await db.runAsync(
                 `INSERT OR REPLACE INTO log_exercises (id, log_workout_id, exercise_id, exercise_name, start_datetime, end_datetime, notes, repetitions, completed, created_at, synced)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
@@ -343,17 +427,28 @@ class SyncService {
                   logExercise.exerciseId,
                   logExercise.exerciseName,
                   logExercise.startDatetime,
-                  logExercise.endDatetime,
-                  logExercise.notes,
+                  logExercise.endDatetime || null,
+                  logExercise.notes || null,
                   logExercise.repetitions,
                   logExercise.completed ? 1 : 0,
                   new Date().toISOString(),
-                ]
+                ] as (string | number | null | boolean)[]
               );
 
               // Save log sets
               if (logExercise.logSets) {
-                for (const logSet of logExercise.logSets) {
+                for (const logSetData of logExercise.logSets) {
+                  const logSet = logSetData as {
+                    id: string;
+                    setNumber: number;
+                    reps: number;
+                    weight?: number;
+                    weightKg?: number;
+                    restTimeSeconds?: number;
+                    timestamp?: string;
+                    notes?: string;
+                    completed: boolean;
+                  };
                   await db.runAsync(
                     `INSERT OR REPLACE INTO log_sets (id, log_exercise_id, set_number, reps, weight_kg, rest_time_seconds, timestamp, notes, created_at, synced)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
@@ -362,12 +457,12 @@ class SyncService {
                       logExercise.id,
                       logSet.setNumber,
                       logSet.reps,
-                      logSet.weightKg,
-                      logSet.restTimeSeconds,
-                      logSet.timestamp,
-                      logSet.notes,
+                      logSet.weightKg || logSet.weight || null,
+                      logSet.restTimeSeconds || null,
+                      logSet.timestamp || null,
+                      logSet.notes || null,
                       new Date().toISOString(),
-                    ]
+                    ] as (string | number | null | boolean)[]
                   );
                 }
               }
@@ -378,14 +473,19 @@ class SyncService {
     }
   }
 
-  private async saveExercisesToLocal(exercises: any[]) {
+  private async saveExercisesToLocal(exercises: unknown[]) {
     const db = await getDatabase();
     if (!db) return; // Skip on web
 
     const now = new Date().toISOString();
 
-    for (const exercise of exercises) {
+    for (const exerciseData of exercises) {
       try {
+        const exercise = exerciseData as unknown as DbExercise & {
+          created_at?: string;
+          updated_at?: string;
+          video_url?: string;
+        };
         // Ensure we always have valid timestamps
         const createdAt = exercise.createdAt || exercise.created_at || now;
         const updatedAt = exercise.updatedAt || exercise.updated_at || now;
@@ -403,6 +503,7 @@ class SyncService {
           ]
         );
       } catch (error) {
+        const exercise = exerciseData as unknown as { id?: string };
         console.error(`Failed to save exercise ${exercise.id}:`, error);
         // Continue with next exercise instead of failing entire sync
       }

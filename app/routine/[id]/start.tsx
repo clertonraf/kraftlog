@@ -20,6 +20,7 @@ import {
   type WorkoutResponse,
   workoutService,
 } from '@/services/routineService';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export default function StartRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,8 +42,8 @@ export default function StartRoutineScreen() {
       ]);
       setRoutine(routineData);
       setWorkouts(workoutsData.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)));
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load routine';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to load routine';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -72,8 +73,8 @@ export default function StartRoutineScreen() {
         pathname: `/workout/session/[workoutId]`,
         params: { workoutId, logRoutineId: logRoutine.id },
       });
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to start workout';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to start workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {

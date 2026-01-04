@@ -17,9 +17,18 @@ function RootLayoutNav() {
 
   const checkInitialConfig = useCallback(async () => {
     const isConfigured = await configService.isConfigured();
+
+    // On web, auto-configure from environment variable if not configured
+    if (!isConfigured && typeof window !== 'undefined') {
+      const webApiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+      console.log('[RootLayout] Auto-configuring web with API URL:', webApiUrl);
+      await configService.setRemoteServer(webApiUrl);
+    }
+
     setConfigChecked(true);
 
-    if (!isConfigured) {
+    // Only redirect to config screen on mobile if not configured
+    if (!isConfigured && typeof window === 'undefined') {
       router.replace('/server-config');
     }
   }, [router]);

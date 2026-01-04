@@ -61,7 +61,7 @@ export const routineImportService = {
 
     // Get auth token
     const token = await AsyncStorage.getItem('token');
-    const headers: any = {
+    const headers: Record<string, string> = {
       'Content-Type': 'multipart/form-data',
     };
     if (token) {
@@ -95,7 +95,7 @@ export const routineImportService = {
 
     // Get auth token
     const token = await AsyncStorage.getItem('token');
-    const headers: any = {
+    const headers: Record<string, string> = {
       'Content-Type': 'multipart/form-data',
     };
     if (token) {

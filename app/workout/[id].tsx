@@ -19,6 +19,7 @@ import {
   type WorkoutResponse,
   workoutService,
 } from '@/services/routineService';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export default function WorkoutDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,8 +35,8 @@ export default function WorkoutDetailsScreen() {
     try {
       const data = await workoutService.getWorkoutById(id);
       setWorkout(data);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load workout';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to load workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -71,9 +72,8 @@ export default function WorkoutDetailsScreen() {
         });
 
         loadWorkout();
-      } catch (error: any) {
-        const errorMsg =
-          error.response?.data?.message || error.message || 'Failed to remove exercise';
+      } catch (error: unknown) {
+        const errorMsg = getErrorMessage(error) || 'Failed to remove exercise';
         if (Platform.OS === 'web') {
           alert(`Error: ${errorMsg}`);
         } else {

@@ -1,15 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { SQLiteDatabase } from 'expo-sqlite';
 import { Platform } from 'react-native';
 
-let db: any | null = null;
-let SQLite: any = null;
+type DbRecord = Record<string, unknown> & { id: string };
+
+let db: SQLiteDatabase | null = null;
+let SQLite: typeof import('expo-sqlite') | null = null;
 
 // Web storage keys
 const WEB_STORAGE_PREFIX = 'kraftlog_';
 
 // Simple in-memory store for web
 class WebDatabase {
-  private data: Map<string, any[]> = new Map();
+  private data: Map<string, DbRecord[]> = new Map();
   private initialized = false;
 
   async init() {
@@ -21,12 +24,12 @@ class WebDatabase {
       const kraftlogKeys = keys.filter((k) => k.startsWith(WEB_STORAGE_PREFIX));
       const items = await AsyncStorage.multiGet(kraftlogKeys);
 
-      items.forEach(([key, value]) => {
+      for (const [key, value] of items) {
         if (value) {
           const tableName = key.replace(WEB_STORAGE_PREFIX, '');
           this.data.set(tableName, JSON.parse(value));
         }
-      });
+      }
     } catch (error) {
       console.error('Failed to load web database:', error);
     }
@@ -39,21 +42,21 @@ class WebDatabase {
     await AsyncStorage.setItem(`${WEB_STORAGE_PREFIX}${tableName}`, JSON.stringify(data));
   }
 
-  getTable(tableName: string): any[] {
+  getTable(tableName: string): DbRecord[] {
     if (!this.data.has(tableName)) {
       this.data.set(tableName, []);
     }
     return this.data.get(tableName)!;
   }
 
-  async insert(tableName: string, item: any) {
+  async insert(tableName: string, item: DbRecord) {
     const table = this.getTable(tableName);
     table.push(item);
     await this.saveTable(tableName);
     return item;
   }
 
-  async update(tableName: string, id: string, updates: any) {
+  async update(tableName: string, id: string, updates: Partial<DbRecord>) {
     const table = this.getTable(tableName);
     const index = table.findIndex((item) => item.id === id);
     if (index !== -1) {
@@ -75,16 +78,16 @@ class WebDatabase {
     return false;
   }
 
-  async findAll(tableName: string): Promise<any[]> {
+  async findAll(tableName: string): Promise<DbRecord[]> {
     return this.getTable(tableName);
   }
 
-  async findById(tableName: string, id: string): Promise<any | null> {
+  async findById(tableName: string, id: string): Promise<DbRecord | null> {
     const table = this.getTable(tableName);
     return table.find((item) => item.id === id) || null;
   }
 
-  async findBy(tableName: string, predicate: (item: any) => boolean): Promise<any[]> {
+  async findBy(tableName: string, predicate: (item: DbRecord) => boolean): Promise<DbRecord[]> {
     const table = this.getTable(tableName);
     return table.filter(predicate);
   }
@@ -99,11 +102,36 @@ class WebDatabase {
     this.data.clear();
     await Promise.all(keys.map((key) => AsyncStorage.removeItem(`${WEB_STORAGE_PREFIX}${key}`)));
   }
+
+  async runAsync(sql: string, params?: unknown[]): Promise<unknown> {
+    console.log('WebDatabase.runAsync called (no-op for web):', sql, params);
+    return Promise.resolve(undefined);
+  }
+
+  async getFirstAsync(sql: string, params?: unknown[]): Promise<unknown> {
+    console.log('WebDatabase.getFirstAsync called (no-op for web):', sql, params);
+    return Promise.resolve(null);
+  }
+
+  async getAllAsync(sql: string, params?: unknown[]): Promise<unknown[]> {
+    console.log('WebDatabase.getAllAsync called (no-op for web):', sql, params);
+    return Promise.resolve([]);
+  }
 }
 
 let webDb: WebDatabase | null = null;
 
-export const initDatabase = async () => {
+export type Database = SQLiteDatabase | WebDatabase;
+
+export function isWebDatabase(db: Database): db is WebDatabase {
+  return 'findBy' in db;
+}
+
+export function isSQLiteDatabase(db: Database): db is SQLiteDatabase {
+  return 'execAsync' in db;
+}
+
+export const initDatabase = async (): Promise<Database> => {
   // Use WebDatabase for web platform
   if (Platform.OS === 'web') {
     console.log('Initializing web database using AsyncStorage');
@@ -304,7 +332,7 @@ export const initDatabase = async () => {
   }
 };
 
-export const getDatabase = async () => {
+export const getDatabase = async (): Promise<Database> => {
   if (Platform.OS === 'web') {
     if (!webDb) {
       return await initDatabase();
@@ -344,20 +372,22 @@ export const clearAllData = async () => {
   console.log('Clearing all local data...');
 
   try {
-    // Clear all tables except migrations
-    await database.execAsync(`
-      DELETE FROM log_sets;
-      DELETE FROM log_exercises;
-      DELETE FROM log_workouts;
-      DELETE FROM log_routines;
-      DELETE FROM workout_exercises;
-      DELETE FROM workouts;
-      DELETE FROM routines;
-      DELETE FROM exercise_muscles;
-      DELETE FROM exercises;
-      DELETE FROM muscles;
-      DELETE FROM sync_queue;
-    `);
+    if ('execAsync' in database) {
+      // Clear all tables except migrations
+      await database.execAsync(`
+        DELETE FROM log_sets;
+        DELETE FROM log_exercises;
+        DELETE FROM log_workouts;
+        DELETE FROM log_routines;
+        DELETE FROM workout_exercises;
+        DELETE FROM workouts;
+        DELETE FROM routines;
+        DELETE FROM exercise_muscles;
+        DELETE FROM exercises;
+        DELETE FROM muscles;
+        DELETE FROM sync_queue;
+      `);
+    }
 
     console.log('All local data cleared successfully');
   } catch (error) {
@@ -367,7 +397,7 @@ export const clearAllData = async () => {
 };
 
 // Migration system
-const runMigrations = async (database: any) => {
+const runMigrations = async (database: SQLiteDatabase) => {
   // Create migrations table if it doesn't exist
   await database.execAsync(`
     CREATE TABLE IF NOT EXISTS migrations (
@@ -377,18 +407,28 @@ const runMigrations = async (database: any) => {
     );
   `);
 
+  interface MigrationVersion {
+    version?: number;
+  }
+
   // Get current version
-  const result = await database.getAllAsync('SELECT MAX(version) as version FROM migrations');
-  const currentVersion = result[0]?.version || 0;
+  const result = await database.getAllAsync<MigrationVersion>(
+    'SELECT MAX(version) as version FROM migrations'
+  );
+  const currentVersion = (result[0]?.version as number | undefined) || 0;
+
+  interface TableInfoRow {
+    name: string;
+  }
 
   // Migration 1: Add is_active, start_date, end_date to routines table
   if (currentVersion < 1) {
     try {
       // Check if columns already exist
-      const tableInfo = await database.getAllAsync('PRAGMA table_info(routines)');
-      const hasIsActive = tableInfo.some((col: any) => col.name === 'is_active');
-      const hasStartDate = tableInfo.some((col: any) => col.name === 'start_date');
-      const hasEndDate = tableInfo.some((col: any) => col.name === 'end_date');
+      const tableInfo = await database.getAllAsync<TableInfoRow>('PRAGMA table_info(routines)');
+      const hasIsActive = tableInfo.some((col) => col.name === 'is_active');
+      const hasStartDate = tableInfo.some((col) => col.name === 'start_date');
+      const hasEndDate = tableInfo.some((col) => col.name === 'end_date');
 
       if (!hasIsActive) {
         await database.execAsync('ALTER TABLE routines ADD COLUMN is_active INTEGER DEFAULT 0');

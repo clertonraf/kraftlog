@@ -106,10 +106,11 @@ export default function EditExerciseModal({
 
       onSave();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       const errorMsg =
-        error.response?.data?.message ||
-        error.message ||
+        err.response?.data?.message ||
+        err.message ||
         `Failed to ${isCreating ? 'create' : 'update'} exercise`;
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);

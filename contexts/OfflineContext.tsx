@@ -69,7 +69,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     const unsubscribe = syncService.subscribe(setSyncStatus);
 
     // Setup app state listener for background sync (skip on web)
-    let subscription: any = null;
+    let subscription: { remove: () => void } | null = null;
     if (Platform.OS !== 'web') {
       subscription = AppState.addEventListener('change', handleAppStateChange);
     }

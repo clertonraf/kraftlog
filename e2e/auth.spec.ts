@@ -16,7 +16,7 @@ test.describe('Authentication Flow', () => {
     await expect(loginPage.loginButton).toBeVisible();
   });
 
-  test('should show error with invalid credentials', async ({ page }) => {
+  test('should show error with invalid credentials', async ({ page: _page }) => {
     await loginPage.login('invalid@example.com', 'wrongpassword');
 
     // Wait for error message
@@ -45,7 +45,7 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveURL(/\/forgot-password/);
   });
 
-  test('should validate email format', async ({ page }) => {
+  test('should validate email format', async ({ page: _page }) => {
     await loginPage.emailInput.fill('invalid-email');
     await loginPage.passwordInput.fill('password123');
     await loginPage.loginButton.click();

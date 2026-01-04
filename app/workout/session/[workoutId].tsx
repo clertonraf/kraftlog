@@ -23,6 +23,7 @@ import {
   logWorkoutService,
 } from '@/services/logService';
 import { type WorkoutResponse, workoutService } from '@/services/routineService';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 interface ExerciseLog {
   exerciseId: string;
@@ -101,8 +102,8 @@ export default function WorkoutSessionScreen() {
         sets: [],
       }));
       setExerciseLogs(initialLogs);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to start workout';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to start workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -165,8 +166,8 @@ export default function WorkoutSessionScreen() {
       setNewSetWeight('');
       setUntilFailure(false);
       setShowSetModal(false);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to log set';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to log set';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -229,8 +230,8 @@ export default function WorkoutSessionScreen() {
       setUntilFailure(false);
       setEditingSetIndex(null);
       setShowEditModal(false);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to update set';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to update set';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -268,8 +269,8 @@ export default function WorkoutSessionScreen() {
         s.setNumber = i + 1;
       });
       setExerciseLogs(updatedLogs);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete set';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to delete set';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -343,9 +344,8 @@ export default function WorkoutSessionScreen() {
         Alert.alert('Success', successMsg);
       }
       router.back();
-    } catch (error: any) {
-      const errorMsg =
-        error.response?.data?.message || error.message || 'Failed to complete workout';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to complete workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {

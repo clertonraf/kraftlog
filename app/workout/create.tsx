@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type ExerciseResponse, exerciseService } from '@/services/exerciseService';
 import { workoutService } from '@/services/routineService';
 import type { WorkoutExerciseRequest } from '@/types/routine';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 const TRAINING_TECHNIQUES = [
   'None',
@@ -58,7 +59,7 @@ export default function CreateWorkoutScreen() {
     try {
       const exercises = await exerciseService.getAllExercises();
       setAllExercises(exercises);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading exercises:', error);
     } finally {
       setLoadingExercises(false);
@@ -88,7 +89,7 @@ export default function CreateWorkoutScreen() {
         });
         setWorkoutExercises(exercises);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading workout:', error);
     }
   }, [id, allExercises]);
@@ -158,8 +159,8 @@ export default function CreateWorkoutScreen() {
       }
 
       router.back();
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to save workout';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to save workout';
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -210,9 +211,8 @@ export default function CreateWorkoutScreen() {
       setShowCreateExercise(false);
 
       Alert.alert('Success', 'Exercise created and added to workout');
-    } catch (error: any) {
-      const errorMsg =
-        error.response?.data?.message || error.message || 'Failed to create exercise';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error) || 'Failed to create exercise';
       Alert.alert('Error', errorMsg);
     } finally {
       setCreatingExercise(false);

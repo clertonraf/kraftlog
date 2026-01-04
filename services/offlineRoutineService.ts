@@ -12,8 +12,29 @@ export interface RoutineLocal {
   synced: boolean;
 }
 
+interface DbRoutineRow {
+  id: string;
+  user_id?: string;
+  userId?: string;
+  name: string;
+  description?: string;
+  is_active?: number;
+  isActive?: boolean;
+  start_date?: string;
+  startDate?: string;
+  end_date?: string;
+  endDate?: string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+  synced?: boolean;
+  workouts?: DbRoutineRow[];
+  workoutExercises?: unknown[];
+}
+
 // Helper to transform database snake_case to camelCase
-const transformRoutine = (routine: any) => ({
+const transformRoutine = (routine: DbRoutineRow) => ({
   ...routine,
   userId: routine.user_id || routine.userId,
   isActive: routine.is_active === 1,
@@ -34,7 +55,7 @@ class OfflineRoutineService {
   }
 
   // Get all routines for a user from local database
-  async getRoutinesByUserId(userId: string, _online = false): Promise<any[]> {
+  async getRoutinesByUserId(userId: string, _online = false): Promise<DbRoutineRow[]> {
     try {
       const db = await getDatabase();
       if (!db) {
@@ -43,40 +64,30 @@ class OfflineRoutineService {
       }
 
       // Check if db has getAllAsync method (SQLite) or custom methods (Web)
-      let routines: any[];
+      let routines: DbRoutineRow[];
       if (typeof db.getAllAsync === 'function') {
         // SQLite database (native)
         routines = (await db.getAllAsync(
           'SELECT * FROM routines WHERE user_id = ? ORDER BY created_at DESC',
           [userId]
-        )) as RoutineLocal[];
-      } else if (typeof db.findBy === 'function') {
-        // Web database
-        routines = await db.findBy(
-          'routines',
-          (r: any) => r.userId === userId || r.user_id === userId
-        );
-        // Sort by created_at DESC
-        routines.sort((a: any, b: any) => {
-          const dateA = new Date(a.createdAt || a.created_at);
-          const dateB = new Date(b.createdAt || b.created_at);
-          return dateB.getTime() - dateA.getTime();
-        });
+        )) as DbRoutineRow[];
       } else {
-        console.log('Unknown database type');
+        // Web - no offline support on web
+        console.log('Web database not supported for offline routines');
         return [];
       }
 
       // Transform to camelCase
       return routines.map(transformRoutine);
-    } catch (error: any) {
-      console.log('Error loading routines:', error.message);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.log('Error loading routines:', err.message);
       return [];
     }
   }
 
   // Get routine by ID from local database
-  async getRoutineById(id: string): Promise<any> {
+  async getRoutineById(id: string): Promise<DbRoutineRow> {
     const db = await this.checkDatabase();
 
     const routine = await db.getFirstAsync('SELECT * FROM routines WHERE id = ?', [id]);
@@ -92,7 +103,7 @@ class OfflineRoutineService {
     );
 
     // Get exercises for each workout
-    for (const workout of workouts as any[]) {
+    for (const workout of workouts as DbRoutineRow[]) {
       workout.workoutExercises = await db.getAllAsync(
         `SELECT we.*, e.name as exercise_name 
          FROM workout_exercises we
@@ -104,13 +115,13 @@ class OfflineRoutineService {
     }
 
     return transformRoutine({
-      ...routine,
-      workouts,
-    });
+      ...(routine as DbRoutineRow),
+      workouts: workouts as unknown as DbRoutineRow[],
+    } as DbRoutineRow);
   }
 
   // Create routine (save locally and queue for sync)
-  async createRoutine(data: any): Promise<any> {
+  async createRoutine(data: Record<string, unknown>): Promise<DbRoutineRow> {
     const db = await this.checkDatabase();
     const id = uuidv4();
     const now = new Date().toISOString();
@@ -120,15 +131,15 @@ class OfflineRoutineService {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
       [
         id,
-        data.userId,
-        data.name,
-        data.description || '',
+        data.userId as string,
+        data.name as string,
+        (data.description as string) || '',
         data.isActive ? 1 : 0,
-        data.startDate || null,
-        data.endDate || null,
+        (data.startDate as string | null) || null,
+        (data.endDate as string | null) || null,
         now,
         now,
-      ]
+      ] as (string | number | null | boolean)[]
     );
 
     // Add to sync queue
@@ -148,25 +159,25 @@ class OfflineRoutineService {
       createdAt: now,
       updatedAt: now,
       synced: false,
-    };
+    } as DbRoutineRow;
   }
 
   // Update routine
-  async updateRoutine(id: string, data: any): Promise<any> {
+  async updateRoutine(id: string, data: Record<string, unknown>): Promise<DbRoutineRow> {
     const db = await this.checkDatabase();
     const now = new Date().toISOString();
 
     // Build update query dynamically based on provided fields
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (data.name !== undefined) {
       updates.push('name = ?');
-      values.push(data.name);
+      values.push(data.name as string);
     }
     if (data.description !== undefined) {
       updates.push('description = ?');
-      values.push(data.description);
+      values.push(data.description as string);
     }
     if (data.isActive !== undefined) {
       updates.push('is_active = ?');
@@ -174,17 +185,20 @@ class OfflineRoutineService {
     }
     if (data.startDate !== undefined) {
       updates.push('start_date = ?');
-      values.push(data.startDate);
+      values.push(data.startDate as string | null);
     }
     if (data.endDate !== undefined) {
       updates.push('end_date = ?');
-      values.push(data.endDate);
+      values.push(data.endDate as string | null);
     }
 
     updates.push('updated_at = ?', 'synced = 0');
     values.push(now, id);
 
-    await db.runAsync(`UPDATE routines SET ${updates.join(', ')} WHERE id = ?`, values);
+    await db.runAsync(
+      `UPDATE routines SET ${updates.join(', ')} WHERE id = ?`,
+      values as (string | number | null | boolean)[]
+    );
 
     // Add to sync queue
     await syncService.addToSyncQueue('routines', id, 'UPDATE', data);
@@ -199,7 +213,7 @@ class OfflineRoutineService {
   }
 
   // Activate routine (deactivate all others first)
-  async activateRoutine(id: string): Promise<any> {
+  async activateRoutine(id: string): Promise<DbRoutineRow> {
     console.log('[offlineRoutineService] Activating routine:', id);
     const db = await this.checkDatabase();
 
@@ -234,7 +248,7 @@ class OfflineRoutineService {
   }
 
   // Create workout
-  async createWorkout(data: any): Promise<any> {
+  async createWorkout(data: Record<string, unknown>): Promise<DbRoutineRow> {
     const db = await this.checkDatabase();
     const id = uuidv4();
     const now = new Date().toISOString();
@@ -242,7 +256,15 @@ class OfflineRoutineService {
     await db.runAsync(
       `INSERT INTO workouts (id, routine_id, name, description, day_of_week, created_at, updated_at, synced)
        VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
-      [id, data.routineId, data.name, data.description || '', data.dayOfWeek || null, now, now]
+      [
+        id,
+        data.routineId as string,
+        data.name as string,
+        (data.description as string) || '',
+        (data.dayOfWeek as number | null) || null,
+        now,
+        now,
+      ] as (string | number | null | boolean)[]
     );
 
     // Add to sync queue
@@ -262,11 +284,11 @@ class OfflineRoutineService {
       createdAt: now,
       updatedAt: now,
       synced: false,
-    };
+    } as DbRoutineRow;
   }
 
   // Update workout
-  async updateWorkout(id: string, data: any): Promise<any> {
+  async updateWorkout(id: string, data: Record<string, unknown>): Promise<DbRoutineRow> {
     const db = await this.checkDatabase();
     const now = new Date().toISOString();
 
@@ -274,7 +296,13 @@ class OfflineRoutineService {
       `UPDATE workouts 
        SET name = ?, description = ?, day_of_week = ?, updated_at = ?, synced = 0
        WHERE id = ?`,
-      [data.name, data.description || '', data.dayOfWeek || null, now, id]
+      [
+        data.name as string,
+        (data.description as string) || '',
+        (data.dayOfWeek as number | null) || null,
+        now,
+        id,
+      ] as (string | number | null | boolean)[]
     );
 
     // Add to sync queue
@@ -285,7 +313,13 @@ class OfflineRoutineService {
       console.log('Background sync will retry later');
     });
 
-    return { id, ...data, updatedAt: now, synced: false };
+    return {
+      id,
+      name: data.name as string,
+      ...data,
+      updatedAt: now,
+      synced: false,
+    } as DbRoutineRow;
   }
 
   // Delete workout
@@ -305,7 +339,7 @@ class OfflineRoutineService {
   }
 
   // Get workout by ID
-  async getWorkoutById(id: string): Promise<any> {
+  async getWorkoutById(id: string): Promise<DbRoutineRow> {
     const db = await this.checkDatabase();
 
     const workout = await db.getFirstAsync('SELECT * FROM workouts WHERE id = ?', [id]);
@@ -327,7 +361,7 @@ class OfflineRoutineService {
     return {
       ...workout,
       workoutExercises,
-    };
+    } as DbRoutineRow;
   }
 }
 

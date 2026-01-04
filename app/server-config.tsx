@@ -155,7 +155,7 @@ export default function ServerConfigScreen() {
             styles.content,
             { paddingTop: insets.top + 40 },
             layout.isWeb && {
-              maxWidth: layout.formMaxWidth as any,
+              maxWidth: layout.formMaxWidth as number,
               alignSelf: 'center',
               width: '100%',
             },

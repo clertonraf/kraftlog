@@ -117,8 +117,10 @@ api.interceptors.response.use(
       }
 
       // Reject with a specific error type for the UI to handle
-      const authError = new Error('Session expired. Please login again.');
-      (authError as any).isAuthError = true;
+      const authError: Error & { isAuthError?: boolean } = new Error(
+        'Session expired. Please login again.'
+      );
+      authError.isAuthError = true;
       return Promise.reject(authError);
     }
 

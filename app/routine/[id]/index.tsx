@@ -21,6 +21,7 @@ import {
   type WorkoutResponse,
   workoutService,
 } from '@/services/routineService';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 type TabType = 'workouts' | 'calendar';
 
@@ -46,8 +47,8 @@ export default function RoutineDetailsScreen() {
       setRoutine(routineData);
       setWorkouts(workoutsData);
       setLogRoutines(logRoutinesData);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to load routine';
+    } catch (error: unknown) {
+      const errorMsg = getErrorMessage(error);
       if (Platform.OS === 'web') {
         alert(`Error: ${errorMsg}`);
       } else {
@@ -70,9 +71,8 @@ export default function RoutineDetailsScreen() {
       try {
         await workoutService.deleteWorkout(workoutId);
         loadRoutine();
-      } catch (error: any) {
-        const errorMsg =
-          error.response?.data?.message || error.message || 'Failed to delete workout';
+      } catch (error: unknown) {
+        const errorMsg = getErrorMessage(error);
         if (Platform.OS === 'web') {
           alert(`Error: ${errorMsg}`);
         } else {
@@ -94,9 +94,12 @@ export default function RoutineDetailsScreen() {
   };
 
   const getMarkedDates = () => {
-    const marked: any = {};
+    const marked: Record<
+      string,
+      { marked: boolean; dotColor: string; selected: boolean; selectedColor: string }
+    > = {};
 
-    logRoutines.forEach((log) => {
+    for (const log of logRoutines) {
       if (log.endDatetime) {
         const date = new Date(log.startDatetime).toISOString().split('T')[0];
         marked[date] = {
@@ -106,7 +109,7 @@ export default function RoutineDetailsScreen() {
           selectedColor: '#E8F5E9',
         };
       }
-    });
+    }
 
     return marked;
   };

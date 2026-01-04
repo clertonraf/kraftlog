@@ -1,6 +1,47 @@
 import api, { isOfflineMode } from './api';
 import { getDatabase } from './database';
 
+interface DbLogRoutineRow {
+  id: string;
+  routine_id: string;
+  user_id: string;
+  start_datetime: string;
+  end_datetime?: string;
+}
+
+interface DbLogWorkoutRow {
+  id: string;
+  log_routine_id: string;
+  workout_id: string;
+  start_datetime: string;
+  end_datetime?: string;
+  logExercises?: LogExerciseResponse[];
+}
+
+interface DbLogExerciseRow {
+  id: string;
+  log_workout_id: string;
+  exercise_id: string;
+  exercise_name: string;
+  start_datetime: string;
+  end_datetime?: string;
+  notes?: string;
+  repetitions?: number;
+  completed: number;
+  logSets?: LogSetResponse[];
+}
+
+interface DbLogSetRow {
+  id: string;
+  log_exercise_id: string;
+  set_number: number;
+  reps: number | null;
+  weight_kg: number | null;
+  rest_time_seconds?: number;
+  timestamp: string;
+  notes?: string;
+}
+
 export interface LogSetResponse {
   id: string;
   logExerciseId: string;
@@ -104,18 +145,18 @@ export const logRoutineService = {
           ORDER BY start_datetime DESC
         `,
           [userId]
-        )) as any[];
+        )) as DbLogRoutineRow[];
 
         // Get workouts for each log routine
         const result = await Promise.all(
-          logRoutines.map(async (logRoutine: any) => {
+          logRoutines.map(async (logRoutine: DbLogRoutineRow) => {
             const logWorkouts = (await db.getAllAsync(
               `
               SELECT * FROM log_workouts 
               WHERE log_routine_id = ?
             `,
               [logRoutine.id]
-            )) as any[];
+            )) as DbLogWorkoutRow[];
 
             // Get exercises for each workout
             for (const workout of logWorkouts) {
@@ -125,7 +166,7 @@ export const logRoutineService = {
                 WHERE log_workout_id = ?
               `,
                 [workout.id]
-              )) as any[];
+              )) as DbLogExerciseRow[];
 
               // Get sets for each exercise
               for (const exercise of logExercises) {
@@ -136,9 +177,9 @@ export const logRoutineService = {
                   ORDER BY set_number
                 `,
                   [exercise.id]
-                )) as any[];
+                )) as DbLogSetRow[];
 
-                exercise.logSets = logSets.map((set: any) => ({
+                exercise.logSets = logSets.map((set: DbLogSetRow) => ({
                   id: set.id,
                   logExerciseId: set.log_exercise_id,
                   setNumber: set.set_number,
@@ -150,7 +191,7 @@ export const logRoutineService = {
                 }));
               }
 
-              workout.logExercises = logExercises.map((ex: any) => ({
+              workout.logExercises = logExercises.map((ex: DbLogExerciseRow) => ({
                 id: ex.id,
                 logWorkoutId: ex.log_workout_id,
                 exerciseId: ex.exercise_id,
@@ -160,7 +201,7 @@ export const logRoutineService = {
                 notes: ex.notes,
                 repetitions: ex.repetitions,
                 completed: ex.completed === 1,
-                logSets: ex.logSets,
+                logSets: ex.logSets || [],
               }));
             }
 
@@ -170,13 +211,13 @@ export const logRoutineService = {
               userId: logRoutine.user_id,
               startDatetime: logRoutine.start_datetime,
               endDatetime: logRoutine.end_datetime,
-              logWorkouts: logWorkouts.map((w: any) => ({
+              logWorkouts: logWorkouts.map((w: DbLogWorkoutRow) => ({
                 id: w.id,
                 logRoutineId: w.log_routine_id,
                 workoutId: w.workout_id,
                 startDatetime: w.start_datetime,
                 endDatetime: w.end_datetime,
-                logExercises: w.logExercises,
+                logExercises: w.logExercises || [],
               })),
             };
           })
@@ -271,8 +312,9 @@ export const logWorkoutService = {
     try {
       const response = await api.get<LogWorkoutResponse>(`/log-workouts/workout/${workoutId}/last`);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 404) {
         return null;
       }
       throw error;
