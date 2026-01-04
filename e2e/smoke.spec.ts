@@ -83,17 +83,44 @@ test.describe('Smoke Tests - Critical Flows', () => {
     await loginPage.login(TEST_USERS.admin.email, TEST_USERS.admin.password);
     await loginPage.waitForNavigation();
 
-    // Test all main navigation tabs
+    // Verify we're on a tabs page (allow some time for redirect from / to /(tabs))
+    await page.waitForURL(/\/(tabs|routines|explore)/, { timeout: 10000 }).catch(async () => {
+      // If still at /, wait a bit more and try again
+      const currentUrl = page.url();
+      if (currentUrl.endsWith('/')) {
+        await page.waitForTimeout(3000);
+        await expect(page).toHaveURL(/\/(tabs|routines|explore)/);
+      }
+    });
+
+    // Test all main navigation tabs by clicking on them
+    // Don't use page.goto() as it might reset state
     const tabs = [
-      { name: 'routines', url: /routines/ },
-      { name: 'explore', url: /explore/ },
-      { name: 'history', url: /history/ },
+      { name: 'Routines', testId: 'tab-routines', url: /routines/ },
+      { name: 'Explore', testId: 'tab-explore', url: /explore/ },
+      { name: 'History', testId: 'tab-history', url: /history/ },
     ];
 
     for (const tab of tabs) {
-      await page.goto(`/(tabs)/${tab.name}`);
+      // Try to click the tab button (more reliable than goto)
+      try {
+        const tabButton = page.getByRole('button', { name: new RegExp(tab.name, 'i') });
+        await tabButton.click({ timeout: 5000 });
+      } catch {
+        // Fallback: try test ID if role doesn't work
+        try {
+          await page.click(`[data-testid="${tab.testId}"]`, { timeout: 5000 });
+        } catch {
+          // Last resort: use goto
+          await page.goto(`/(tabs)/${tab.name.toLowerCase()}`);
+        }
+      }
+      
       await expect(page).toHaveURL(tab.url);
       await expect(page).not.toHaveURL(/login/); // Should still be logged in
+      
+      // Small delay between navigation
+      await page.waitForTimeout(500);
     }
   });
 

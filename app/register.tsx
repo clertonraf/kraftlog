@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,10 +25,18 @@ export default function RegisterScreen() {
   const [weightKg, setWeightKg] = useState('');
   const [heightCm, setHeightCm] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
+
+  // Navigate when authentication succeeds
+  useEffect(() => {
+    if (isAuthenticated && loading) {
+      setLoading(false);
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, loading, router]);
 
   const handleRegister = async () => {
     if (!name || !surname || !email || !password) {
@@ -47,11 +55,10 @@ export default function RegisterScreen() {
         weightKg: weightKg ? parseFloat(weightKg) : undefined,
         heightCm: heightCm ? parseFloat(heightCm) : undefined,
       });
-      router.replace('/(tabs)');
+      // Navigation will happen automatically via useEffect above
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only clear loading on error
     }
   };
 

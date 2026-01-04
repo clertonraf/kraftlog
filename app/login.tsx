@@ -22,7 +22,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [apiUrl, setApiUrl] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
@@ -36,6 +36,18 @@ export default function LoginScreen() {
     loadApiUrl();
   }, [loadApiUrl]);
 
+  // Navigate when authentication succeeds
+  useEffect(() => {
+    if (isAuthenticated && loading) {
+      // Give auth state a moment to fully stabilize
+      const timer = setTimeout(() => {
+        setLoading(false);
+        router.replace('/(tabs)');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, loading, router]);
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -45,11 +57,10 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login({ email, password });
-      router.replace('/(tabs)');
+      // Navigation will happen automatically via useEffect above
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only clear loading on error
     }
   };
 
