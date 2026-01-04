@@ -195,49 +195,95 @@ export default function CreateRoutineScreen() {
 
             <View style={styles.section}>
               <Text style={styles.label}>Start Date</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowStartDatePicker(true)}
-              >
-                <Text style={styles.dateText}>{formatDate(startDate)}</Text>
-                <Ionicons name="calendar-outline" size={20} color="#007AFF" />
-              </TouchableOpacity>
-              {showStartDatePicker && (
-                <DateTimePicker
-                  value={startDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(_event, selectedDate) => {
-                    setShowStartDatePicker(Platform.OS === 'ios');
-                    if (selectedDate) {
-                      setStartDate(selectedDate);
+              {Platform.OS === 'web' ? (
+                <input
+                  type="date"
+                  value={startDate.toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    const newDate = new Date(e.target.value);
+                    if (!Number.isNaN(newDate.getTime())) {
+                      setStartDate(newDate);
                     }
                   }}
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    border: '1px solid #E5E5EA',
+                    fontSize: 16,
+                    backgroundColor: '#FFF',
+                    width: '100%',
+                  }}
                 />
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setShowStartDatePicker(true)}
+                  >
+                    <Text style={styles.dateText}>{formatDate(startDate)}</Text>
+                    <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+                  </TouchableOpacity>
+                  {showStartDatePicker && (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(_event, selectedDate) => {
+                        setShowStartDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          setStartDate(selectedDate);
+                        }
+                      }}
+                    />
+                  )}
+                </>
               )}
             </View>
 
             <View style={styles.section}>
               <Text style={styles.label}>End Date</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowEndDatePicker(true)}
-              >
-                <Text style={styles.dateText}>{formatDate(endDate)}</Text>
-                <Ionicons name="calendar-outline" size={20} color="#007AFF" />
-              </TouchableOpacity>
-              {showEndDatePicker && (
-                <DateTimePicker
-                  value={endDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(_event, selectedDate) => {
-                    setShowEndDatePicker(Platform.OS === 'ios');
-                    if (selectedDate) {
-                      setEndDate(selectedDate);
+              {Platform.OS === 'web' ? (
+                <input
+                  type="date"
+                  value={endDate.toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    const newDate = new Date(e.target.value);
+                    if (!Number.isNaN(newDate.getTime())) {
+                      setEndDate(newDate);
                     }
                   }}
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    border: '1px solid #E5E5EA',
+                    fontSize: 16,
+                    backgroundColor: '#FFF',
+                    width: '100%',
+                  }}
                 />
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setShowEndDatePicker(true)}
+                  >
+                    <Text style={styles.dateText}>{formatDate(endDate)}</Text>
+                    <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+                  </TouchableOpacity>
+                  {showEndDatePicker && (
+                    <DateTimePicker
+                      value={endDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(_event, selectedDate) => {
+                        setShowEndDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          setEndDate(selectedDate);
+                        }
+                      }}
+                    />
+                  )}
+                </>
               )}
             </View>
 
