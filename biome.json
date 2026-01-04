@@ -20,8 +20,8 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "off",
-        "noArrayIndexKey": "warn"
+        "noExplicitAny": "error",
+        "noArrayIndexKey": "error"
       },
       "style": {
         "noNonNullAssertion": "off",
@@ -29,11 +29,11 @@
         "useTemplate": "warn"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "on"
       },
       "correctness": {
-        "noInvalidUseBeforeDeclaration": "warn",
-        "useExhaustiveDependencies": "warn"
+        "noInvalidUseBeforeDeclaration": "error",
+        "useExhaustiveDependencies": "error"
       }
     }
   },
@@ -59,7 +59,7 @@
       "linter": {
         "rules": {
           "suspicious": {
-            "noExplicitAny": "off"
+            "noExplicitAny": "error"
           }
         }
       }
