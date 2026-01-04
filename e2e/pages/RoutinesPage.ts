@@ -8,7 +8,8 @@ export class RoutinesPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.createButton = page.getByRole('button', { name: /create|new.*routine/i });
+    // Use testID which is more reliable
+    this.createButton = page.getByTestId('create-routine-fab');
     this.routinesList = page
       .locator('[data-testid="routines-list"]')
       .or(page.locator('text=/routine/i').first());
@@ -20,8 +21,15 @@ export class RoutinesPage {
   }
 
   async createRoutine(name: string, startDate?: string, endDate?: string) {
+    await this.createButton.waitFor({ state: 'visible', timeout: 10000 });
     await this.createButton.click();
-    await this.page.getByPlaceholder(/routine.*name/i).fill(name);
+
+    // Wait for the form to load
+    await this.page.waitForTimeout(1000);
+
+    const nameInput = this.page.getByPlaceholder(/routine.*name/i);
+    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
+    await nameInput.fill(name);
 
     if (startDate) {
       const startInput = this.page.locator('input[type="date"]').first();
@@ -33,8 +41,10 @@ export class RoutinesPage {
       await endInput.fill(endDate);
     }
 
-    await this.page.getByRole('button', { name: /save/i }).click();
-    await this.page.waitForURL(/\/(tabs)\/routines/, { timeout: 10000 });
+    const saveButton = this.page.getByRole('button', { name: /save/i });
+    await saveButton.waitFor({ state: 'visible', timeout: 5000 });
+    await saveButton.click();
+    await this.page.waitForURL(/\/(tabs)\/routines/, { timeout: 15000 });
   }
 
   async selectRoutine(name: string) {

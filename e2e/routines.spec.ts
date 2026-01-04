@@ -136,26 +136,41 @@ test.describe('Routine Validation', () => {
 
     routinesPage = new RoutinesPage(page);
     await routinesPage.goto();
+    await page.waitForTimeout(2000); // Wait for page to fully load
   });
 
   test('should require routine name', async ({ page }) => {
+    await routinesPage.createButton.waitFor({ state: 'visible', timeout: 10000 });
     await routinesPage.createButton.click();
 
+    // Wait for the form to appear
+    await page.waitForTimeout(1000);
+
     // Try to save without name
-    await page.getByRole('button', { name: /save/i }).click();
+    const saveButton = page.getByRole('button', { name: /save/i });
+    await saveButton.waitFor({ state: 'visible', timeout: 5000 });
+    await saveButton.click();
 
     // Should show validation error
-    await expect(page.getByText(/name.*required|enter.*name/i)).toBeVisible();
+    await expect(page.getByText(/name.*required|enter.*name/i)).toBeVisible({ timeout: 5000 });
   });
 
   test('should validate date range', async ({ page }) => {
+    await routinesPage.createButton.waitFor({ state: 'visible', timeout: 10000 });
     await routinesPage.createButton.click();
+
+    // Wait for the form to appear
+    await page.waitForTimeout(1000);
 
     await page.getByPlaceholder(/routine.*name/i).fill('Invalid Dates');
 
     // Set end date before start date
-    await page.locator('input[type="date"]').first().fill('2024-12-31');
-    await page.locator('input[type="date"]').last().fill('2024-01-01');
+    const dateInputs = page.locator('input[type="date"]');
+    const startDateInput = dateInputs.first();
+    const endDateInput = dateInputs.last();
+
+    await startDateInput.fill('2024-12-31');
+    await endDateInput.fill('2024-01-01');
 
     await page.getByRole('button', { name: /save/i }).click();
 
