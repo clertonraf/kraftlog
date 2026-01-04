@@ -2,15 +2,17 @@
 
 ## ✅ Ready to Run!
 
-The E2E tests use `npx` which will automatically download Playwright on first run.
+The E2E tests use `npx @playwright/test` which will download Playwright on first run.
 
 ## 🚀 Run Tests
+
+**First time:** When prompted "Need to install... Ok to proceed? (y)", type `y` and press Enter.
 
 ```bash
 # Run all E2E tests (takes 5-10 minutes)
 npm run test:e2e:web
 
-# Run smoke tests only (fast, 2-3 minutes)
+# Run smoke tests only (fast, 2-3 minutes) 
 npm run test:e2e:web:smoke
 
 # Run with browser visible (see what's happening)
@@ -22,6 +24,9 @@ npm run test:e2e:web:debug
 # View test report after running
 npm run test:e2e:web:report
 ```
+
+### First Run Setup (one-time, 2-3 minutes):
+Playwright will download browsers on first run. The script handles this automatically.
 
 ## 📋 What Gets Tested
 
