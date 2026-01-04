@@ -51,3 +51,8 @@ app-example
 coverage/
 babel.config.test.js
 dist
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

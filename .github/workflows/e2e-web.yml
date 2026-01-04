@@ -1,0 +1,99 @@
+name: E2E Tests (Web)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  e2e-web-tests:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Start Docker services (Backend + DB)
+        run: |
+          docker-compose up -d
+          # Wait for services to be ready
+          timeout 60 bash -c 'until docker-compose exec -T backend curl -f http://localhost:8080/health || true; do sleep 2; done'
+      
+      - name: Run E2E tests
+        run: npm run test:e2e:web
+        env:
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL || 'admin@kraftlog.com' }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'admin123' }}
+          E2E_BASE_URL: http://localhost:8081
+          EXPO_PUBLIC_API_URL: http://localhost:8080
+          CI: true
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+      
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-videos
+          path: e2e/test-results/
+          retention-days: 7
+      
+      - name: Stop Docker services
+        if: always()
+        run: docker-compose down
+
+  smoke-tests:
+    name: Smoke Tests (Fast)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Start Docker services
+        run: docker-compose up -d
+      
+      - name: Run smoke tests
+        run: npm run test:e2e:web:smoke
+        env:
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL || 'admin@kraftlog.com' }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'admin123' }}
+          CI: true
+      
+      - name: Stop Docker services
+        if: always()
+        run: docker-compose down
