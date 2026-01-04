@@ -1,21 +1,22 @@
 # Quick Start - Playwright E2E Tests
 
-## ⚠️ Important: NODE_ENV Issue
+## ⚠️ CRITICAL: Fix NODE_ENV First!
 
-**The dependency issue was caused by `NODE_ENV=production` in your shell environment.**
+**Your shell has `NODE_ENV=production` set, which prevents devDependencies from installing.**
 
-This setting prevents npm from installing devDependencies (TypeScript, @types/react, etc.).
+### Permanent Fix (Do This Once):
 
-### Fix for Your Shell
-
-Add this to your `~/.zshrc` or `~/.bashrc`:
+Edit `~/.zshrc` (or `~/.bashrc` if you use bash):
 
 ```bash
-# Only set NODE_ENV=production for deployment, not for development
-# unset NODE_ENV  # or set NODE_ENV=development
+# Remove or comment out any line that sets NODE_ENV=production
+# export NODE_ENV=production  # ❌ Remove this!
+
+# Add this instead:
+unset NODE_ENV  # ✅ For local development
 ```
 
-Then reload your shell: `source ~/.zshrc`
+Then reload: `source ~/.zshrc`
 
 ## ✅ Setup (One-Time)
 
@@ -25,39 +26,43 @@ npm install -g @playwright/test@1.57.0
 playwright install chromium
 ```
 
-### 2. Run Setup Script
+### 2. Install Project Dependencies
 ```bash
-./scripts/setup-e2e.sh
+# Make sure NODE_ENV is NOT set to production
+echo $NODE_ENV  # Should be empty or 'development'
+
+# If it says 'production', unset it:
+unset NODE_ENV
+
+# Then install
+npm install
 ```
 
-This will:
-- Install all dependencies (with devDependencies)
-- Create Playwright symlink
-- Verify TypeScript and @types/react are installed
-
 ## 🚀 Run Tests
+
+**IMPORTANT:** Always use `npx playwright` (not just `playwright`) to use the local version:
 
 ```bash
 # Make sure backend is running
 docker-compose up -d
 
-# Run smoke tests (fastest, 2-3 minutes)
-playwright test e2e/smoke.spec.ts
+# Run smoke tests (uses local Playwright)
+npx playwright test e2e/smoke.spec.ts
 
-# Run all tests (~5-10 minutes)
-playwright test
+# Run all tests
+npx playwright test
 
 # Run with visible browser
-playwright test --headed
+npx playwright test --headed
 
-# Run specific test file
-playwright test e2e/auth.spec.ts
+# Run specific test
+npx playwright test e2e/auth.spec.ts
 
 # Debug mode
-playwright test --debug
+npx playwright test --debug
 
 # View report
-playwright show-report
+npx playwright show-report
 ```
 
 ## 📋 Test Coverage
@@ -71,22 +76,33 @@ playwright show-report
 
 ## 🐛 Troubleshooting
 
-### "Cannot find module '@playwright/test'"
-Re-run the setup script:
+### "No tests found" or "test.describe() not expected"
+This means you're using the global Playwright instead of local. Use `npx`:
 ```bash
-./scripts/setup-e2e.sh
+npx playwright test e2e/smoke.spec.ts  # ✅ Correct
+playwright test e2e/smoke.spec.ts      # ❌ Wrong
 ```
 
-### "TypeScript not installed" or "Cannot start web server"
-Check if NODE_ENV is set:
+### "TypeError: Cannot read property..." or dependencies not installed
+Check NODE_ENV:
 ```bash
 echo $NODE_ENV
 ```
 
-If it says "production", unset it:
+If it says "production":
 ```bash
 unset NODE_ENV
 npm install
+```
+
+### Tests timeout looking for elements
+The web app may be loading slowly or UI selectors don't match. Check:
+```bash
+# Look at screenshots in test-results/
+ls test-results/*/test-failed-*.png
+
+# Run with headed mode to see what's happening
+npx playwright test --headed --debug
 ```
 
 ### Port 8081 already in use
@@ -94,22 +110,35 @@ npm install
 lsof -ti:8081 | xargs kill -9
 ```
 
-### Web server won't start
-Make sure you're not in production mode:
-```bash
-unset NODE_ENV
-npm run web
-```
-
 ## 📝 Test Files
 
-- `e2e/smoke.spec.ts` - Critical smoke tests (fastest)
+- `e2e/smoke.spec.ts` - Critical smoke tests
 - `e2e/auth.spec.ts` - Authentication flows
 - `e2e/routines.spec.ts` - Routine management
 - `e2e/exercises.spec.ts` - Exercise features
 - `e2e/workouts.spec.ts` - Workout sessions
 - `e2e/settings.spec.ts` - Settings & config
 
-## 🎯 CI/CD
+## 🎯 Why Use `npx playwright` Instead of Just `playwright`?
 
-Tests run automatically on GitHub Actions (NODE_ENV is not set to production in CI).
+- `npx playwright` → Uses the **local** version from `node_modules/@playwright/test`
+- `playwright` → Uses the **global** version from `~/.nvm/versions/node/...`
+
+The test files import from the local version, so the CLI must also use the local version to avoid conflicts.
+
+## ✅ Verification
+
+After setup, verify everything works:
+
+```bash
+# 1. Check NODE_ENV
+echo $NODE_ENV  # Should be empty or 'development'
+
+# 2. Check Playwright is installed locally
+ls node_modules/@playwright/test/index.js
+
+# 3. Run a simple test
+npx playwright test e2e/smoke.spec.ts --grep "page load"
+```
+
+See `DEPENDENCY_FIX_SUMMARY.md` for more details about the NODE_ENV issue.
