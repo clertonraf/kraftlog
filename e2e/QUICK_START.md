@@ -1,32 +1,40 @@
 # Quick Start - Playwright E2E Tests
 
-## ✅ Ready to Run!
+## ⚠️ Installation Note
 
-The E2E tests use `npx @playwright/test` which will download Playwright on first run.
+Due to peer dependency conflicts with React 19, Playwright cannot be installed automatically.
 
-## 🚀 Run Tests
+## 🚀 Two Ways to Run Tests
 
-**First time:** When prompted "Need to install... Ok to proceed? (y)", type `y` and press Enter.
+### Option 1: Direct npx (Recommended)
+
+Run tests directly with npx (will download Playwright on first run):
 
 ```bash
-# Run all E2E tests (takes 5-10 minutes)
-npm run test:e2e:web
+# When prompted "Need to install... Ok to proceed? (y)", type 'y'
 
-# Run smoke tests only (fast, 2-3 minutes) 
-npm run test:e2e:web:smoke
+# Run smoke tests (fast)
+npx playwright@1.57.0 test e2e/smoke.spec.ts
 
-# Run with browser visible (see what's happening)
-npm run test:e2e:web:headed
+# Run all tests  
+npx playwright@1.57.0 test
 
-# Debug a specific test
-npm run test:e2e:web:debug
+# Run with browser visible
+npx playwright@1.57.0 test --headed
 
-# View test report after running
-npm run test:e2e:web:report
+# Debug mode
+npx playwright@1.57.0 test --debug
 ```
 
-### First Run Setup (one-time, 2-3 minutes):
-Playwright will download browsers on first run. The script handles this automatically.
+### Option 2: Install browsers once, then use npx
+
+```bash
+# First time - install browsers (one-time, 2-3 minutes)
+npx playwright@1.57.0 install chromium
+
+# Then run tests
+npx playwright@1.57.0 test e2e/smoke.spec.ts
+```
 
 ## 📋 What Gets Tested
 
@@ -41,14 +49,19 @@ Playwright will download browsers on first run. The script handles this automati
 ## 🔧 Prerequisites
 
 - **Backend must be running** on `http://localhost:8080`
-- **Web app will auto-start** on `http://localhost:8081`
 - **Test user**: `admin@kraftlog.com` / `admin123` (default)
+
+Start backend:
+```bash
+docker-compose up -d
+```
 
 ## 🐛 Troubleshooting
 
-### Backend not running?
+### Tests fail to start web server?
+Make sure port 8081 is free:
 ```bash
-docker-compose up -d
+lsof -ti:8081 | xargs kill -9
 ```
 
 ### Change test credentials?
@@ -56,16 +69,14 @@ Set environment variables:
 ```bash
 export TEST_USER_EMAIL=your@email.com
 export TEST_USER_PASSWORD=yourpassword
-npm run test:e2e:web:smoke
+npx playwright@1.57.0 test e2e/smoke.spec.ts
 ```
 
-### Playwright needs installation?
-First run will auto-download (may take 2-3 minutes).
+### View test results?
+```bash
+npx playwright@1.57.0 show-report
+```
 
 ## 📊 CI/CD
 
-Tests run automatically on GitHub Actions for:
-- Every push to `main` or `develop`
-- Every pull request
-
-View results in GitHub Actions tab.
+Tests run automatically on GitHub Actions for every push and PR.
