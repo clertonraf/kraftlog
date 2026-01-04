@@ -30,21 +30,25 @@ export class LoginPage {
   }
 
   async waitForNavigation() {
-    // After login, wait for navigation away from login page
-    await this.page.waitForURL((url) => !url.pathname.includes('/login'), {
-      timeout: 15000,
-    });
+    // Wait for navigation away from login page
+    // Sometimes it goes to / and then redirects, sometimes directly to /(tabs)
+    await this.page.waitForTimeout(2000); // Give time for navigation to start
     
-    // Wait for the app to fully load (tabs or main content)
-    // Check for common elements that appear after successful login
-    try {
-      // Wait for either bottom tabs or main navigation to appear
-      await this.page.waitForSelector('[role="navigation"], [data-testid="bottom-tabs"]', {
-        timeout: 10000,
-      });
-    } catch {
-      // If tabs don't appear, just wait for network to be idle
-      await this.page.waitForLoadState('networkidle', { timeout: 5000 });
+    // Wait until we're not on login page anymore
+    const maxWait = 15000;
+    const start = Date.now();
+    
+    while (Date.now() - start < maxWait) {
+      const url = this.page.url();
+      if (!url.includes('/login')) {
+        // Successfully navigated away
+        // Wait a bit more for content to load
+        await this.page.waitForTimeout(1000);
+        return;
+      }
+      await this.page.waitForTimeout(500);
     }
+    
+    throw new Error('Timeout waiting for navigation away from login page');
   }
 }

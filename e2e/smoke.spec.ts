@@ -8,6 +8,12 @@ import { LoginPage } from './pages/LoginPage';
  */
 
 test.describe('Smoke Tests - Critical Flows', () => {
+  // Clear storage before each test to ensure clean state
+  test.beforeEach(async ({ context }) => {
+    await context.clearCookies();
+    await context.clearPermissions();
+  });
+
   test('complete user journey: login → create routine → create workout → logout', async ({
     page,
   }) => {
