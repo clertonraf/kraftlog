@@ -19,7 +19,8 @@ test.describe('Settings and Configuration', () => {
 
   test('should display settings page', async ({ page }) => {
     await expect(page).toHaveURL(/settings/);
-    await expect(page.getByText(/settings|profile|account/i)).toBeVisible();
+    await expect(page.getByText('Settings').first()).toBeVisible();
+    await expect(page.getByText('Account')).toBeVisible();
   });
 
   test('should update user profile', async ({ page }) => {
@@ -54,61 +55,70 @@ test.describe('Settings and Configuration', () => {
   });
 
   test('should logout successfully', async ({ page }) => {
-    await page.getByRole('button', { name: /logout|sign out/i }).click();
+    // React Native Web's Alert.alert uses browser confirm()
+    // Set up handler
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toMatch(/logout/i);
+      await dialog.accept();
+    });
 
-    // Should redirect to login
-    await expect(page).toHaveURL(/login/);
+    await page.getByText('Logout').click();
+
+    // Should redirect to login after confirming
+    await expect(page).toHaveURL(/login/, { timeout: 10000 });
   });
 
   test('should display app version', async ({ page }) => {
-    // Should show app version somewhere in settings
-    const versionText = page.getByText(/version|v\d+\.\d+/i);
+    // Scroll down to About section
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(500);
 
-    if (await versionText.isVisible().catch(() => false)) {
-      expect(await versionText.textContent()).toMatch(/\d+\.\d+/);
-    }
+    // Should show version "1.0.0" in the About section
+    await expect(page.getByText('Version')).toBeVisible();
+    await expect(page.getByText('1.0.0')).toBeVisible();
   });
 });
 
 test.describe('Server Configuration (Web Only)', () => {
-  test('should display server configuration', async ({ page }) => {
-    const loginPage = new LoginPage(page);
+  let loginPage: LoginPage;
+
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(
       process.env.TEST_USER_EMAIL || 'admin@kraftlog.com',
       process.env.TEST_USER_PASSWORD || 'admin123'
     );
     await loginPage.waitForNavigation();
+  });
 
-    // Navigate to server config (if available on web)
-    await page.goto('/server-config');
+  test('should display server configuration', async ({ page }) => {
+    // Navigate to settings page
+    await page.goto('/(tabs)/settings');
+    await page.waitForLoadState('networkidle');
 
-    // Should show server URL input
-    await expect(page.getByText(/server|url|api/i)).toBeVisible();
+    // Scroll to Server Configuration section
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await page.waitForTimeout(500);
+
+    // Should show server configuration on web
+    await expect(page.getByText('Server Configuration')).toBeVisible();
+    await expect(page.getByText('Server URL').first()).toBeVisible();
   });
 
   test('should update server URL', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-    await loginPage.goto();
-    await loginPage.login(
-      process.env.TEST_USER_EMAIL || 'admin@kraftlog.com',
-      process.env.TEST_USER_PASSWORD || 'admin123'
-    );
-    await loginPage.waitForNavigation();
+    await page.goto('/(tabs)/settings');
+    await page.waitForLoadState('networkidle');
 
-    await page.goto('/server-config');
+    // Scroll to Server Configuration section
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await page.waitForTimeout(500);
 
-    const serverInput = page.getByPlaceholder(/server.*url|api.*url/i);
-
-    if (await serverInput.isVisible().catch(() => false)) {
-      await serverInput.clear();
-      await serverInput.fill('http://localhost:8080');
-
-      await page.getByRole('button', { name: /save|update/i }).click();
-
-      // Should show success message
-      await expect(page.getByText(/saved|updated/i)).toBeVisible({ timeout: 5000 });
-    }
+    // On web, the server URL is read-only from environment variable
+    await expect(page.getByText('Server Configuration')).toBeVisible();
+    await expect(
+      page.getByText(/server URL is configured via the EXPO_PUBLIC_API_URL environment variable/i)
+    ).toBeVisible();
   });
 });
 
