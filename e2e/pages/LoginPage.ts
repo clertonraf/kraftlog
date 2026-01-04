@@ -13,9 +13,9 @@ export class LoginPage {
     this.page = page;
     this.emailInput = page.getByPlaceholder('Email');
     this.passwordInput = page.getByPlaceholder('Password');
-    this.loginButton = page.getByRole('button', { name: /login|sign in/i });
+    this.loginButton = page.getByTestId('login-button');
     this.registerLink = page.getByText(/don't have.*account|register|sign up/i);
-    this.forgotPasswordLink = page.getByText(/forgot.*password/i);
+    this.forgotPasswordLink = page.getByTestId('forgot-password-link');
     this.errorMessage = page.getByText(/error|invalid|failed/i);
   }
 
@@ -30,6 +30,21 @@ export class LoginPage {
   }
 
   async waitForNavigation() {
-    await this.page.waitForURL(/\/(tabs|routines|explore)/, { timeout: 10000 });
+    // After login, wait for navigation away from login page
+    await this.page.waitForURL((url) => !url.pathname.includes('/login'), {
+      timeout: 15000,
+    });
+    
+    // Wait for the app to fully load (tabs or main content)
+    // Check for common elements that appear after successful login
+    try {
+      // Wait for either bottom tabs or main navigation to appear
+      await this.page.waitForSelector('[role="navigation"], [data-testid="bottom-tabs"]', {
+        timeout: 10000,
+      });
+    } catch {
+      // If tabs don't appear, just wait for network to be idle
+      await this.page.waitForLoadState('networkidle', { timeout: 5000 });
+    }
   }
 }

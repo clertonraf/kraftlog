@@ -143,6 +143,9 @@ export default function RegisterScreen() {
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
+              testID="register-button"
+              accessibilityRole="button"
+              accessibilityLabel="Sign Up"
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
@@ -151,7 +154,11 @@ export default function RegisterScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.back()} disabled={loading}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              disabled={loading}
+              testID="login-link"
+            >
               <Text style={styles.linkText}>
                 Already have an account? <Text style={styles.linkBold}>Login</Text>
               </Text>
