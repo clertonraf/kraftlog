@@ -265,3 +265,12 @@ jobs:
 - [Best Practices](https://playwright.dev/docs/best-practices)
 - [Debugging Guide](https://playwright.dev/docs/debug)
 - [API Reference](https://playwright.dev/docs/api/class-playwright)
+
+## Installation
+
+Playwright requires --legacy-peer-deps flag:
+
+```bash
+npm install --legacy-peer-deps
+npx playwright install chromium
+```

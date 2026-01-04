@@ -24,11 +24,11 @@
     "test:e2e:smoke": "./scripts/run-e2e-tests.sh smoke",
     "test:e2e:report": "./scripts/run-e2e-tests.sh report",
     "test:e2e:watch": "./scripts/run-e2e-tests.sh watch",
-    "test:e2e:web": "playwright test",
-    "test:e2e:web:headed": "playwright test --headed",
-    "test:e2e:web:debug": "playwright test --debug",
-    "test:e2e:web:smoke": "playwright test smoke.spec.ts",
-    "test:e2e:web:report": "playwright show-report"
+    "test:e2e:web": "npx playwright test",
+    "test:e2e:web:headed": "npx playwright test --headed",
+    "test:e2e:web:debug": "npx playwright test --debug",
+    "test:e2e:web:smoke": "npx playwright test smoke.spec.ts",
+    "test:e2e:web:report": "npx playwright show-report"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
