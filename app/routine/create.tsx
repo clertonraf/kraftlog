@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { routineService } from '@/services/routineService';
 
+const parseDate = (dateString: string): Date => {
+  // Parse DD-MM-YYYY format
+  const parts = dateString.split('-');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  return new Date();
+};
+
 export default function CreateRoutineScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
@@ -33,25 +45,7 @@ export default function CreateRoutineScreen() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  const parseDate = (dateString: string): Date => {
-    // Parse DD-MM-YYYY format
-    const parts = dateString.split('-');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-      const year = parseInt(parts[2], 10);
-      return new Date(year, month, day);
-    }
-    return new Date();
-  };
-
-  useEffect(() => {
-    if (id) {
-      loadRoutine();
-    }
-  }, [id]);
-
-  const loadRoutine = async () => {
+  const loadRoutine = useCallback(async () => {
     if (!id) return;
 
     setInitialLoading(true);
@@ -76,7 +70,13 @@ export default function CreateRoutineScreen() {
     } finally {
       setInitialLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadRoutine();
+    }
+  }, [id, loadRoutine]);
 
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, '0');
