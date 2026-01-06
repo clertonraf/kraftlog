@@ -24,11 +24,11 @@ export class RoutinesPage {
     await this.createButton.waitFor({ state: 'visible', timeout: 10000 });
     await this.createButton.click();
 
-    // Wait for the form to load
-    await this.page.waitForTimeout(1000);
+    // Wait for navigation to /routine/create
+    await this.page.waitForURL(/\/routine\/create/, { timeout: 10000 });
 
-    const nameInput = this.page.getByPlaceholder(/routine.*name/i);
-    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
+    const nameInput = this.page.getByTestId('routine-name-input');
+    await nameInput.waitFor({ state: 'visible', timeout: 10000 });
     await nameInput.fill(name);
 
     if (startDate) {
@@ -41,10 +41,14 @@ export class RoutinesPage {
       await endInput.fill(endDate);
     }
 
-    const saveButton = this.page.getByRole('button', { name: /save/i });
-    await saveButton.waitFor({ state: 'visible', timeout: 5000 });
+    const saveButton = this.page.getByTestId('save-routine-button');
+    await saveButton.waitFor({ state: 'visible', timeout: 10000 });
     await saveButton.click();
-    await this.page.waitForURL(/\/(tabs)\/routines/, { timeout: 15000 });
+
+    // Wait for the alert and dismiss it
+    this.page.once('dialog', (dialog) => dialog.accept());
+
+    await this.page.waitForURL(/\/routines/, { timeout: 15000 });
   }
 
   async selectRoutine(name: string) {
@@ -58,8 +62,11 @@ export class RoutinesPage {
       .or(this.page.getByRole('button', { name: /edit/i }))
       .click();
 
+    // Wait for navigation to edit screen
+    await this.page.waitForURL(/\/routine\/create/, { timeout: 10000 });
+
     if (newName) {
-      const nameInput = this.page.getByPlaceholder(/routine.*name/i);
+      const nameInput = this.page.getByTestId('routine-name-input');
       await nameInput.clear();
       await nameInput.fill(newName);
     }
@@ -74,7 +81,11 @@ export class RoutinesPage {
       await endInput.fill(newEndDate);
     }
 
-    await this.page.getByRole('button', { name: /save/i }).click();
+    // Wait for the alert and dismiss it
+    this.page.once('dialog', (dialog) => dialog.accept());
+
+    await this.page.getByTestId('save-routine-button').click();
+    await this.page.waitForURL(/\/routines/, { timeout: 15000 });
   }
 
   async deleteRoutine(name: string) {
